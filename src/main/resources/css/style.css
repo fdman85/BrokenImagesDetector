@@ -1,0 +1,71 @@
+/**/
+.my-tree-table-row-text-fill .cell {
+    -fx-text-fill: black;
+}
+
+/*.my-tree-table-row-text-fill:selected .cell {
+    -fx-text-fill: white;
+} */
+
+/**/
+.tree-table-row-bckgnd-empty {
+    -fx-background-color: white;
+}
+
+.tree-table-row-bckgnd-empty:selected {
+    -fx-background-color: white;
+}
+
+/**/
+.tree-table-row-bckgnd-with-status {
+    -fx-background-color: rgba(147, 112, 219, 0.50);
+}
+
+.tree-table-row-bckgnd-with-status:selected {
+    -fx-background-color: rgba(147, 112, 219, 0.75);
+}
+
+/**/
+#tree-table-row-bckgnd-critical {
+    -fx-background-color: rgba(255, 0, 0, 0.50);
+}
+
+#tree-table-row-bckgnd-critical:selected {
+    -fx-background-color: rgba(255, 0, 0, 0.75);
+}
+
+/**/
+#tree-table-row-bckgnd-warn {
+    -fx-background-color: rgba(255, 127, 80, 0.50);
+}
+
+#tree-table-row-bckgnd-warn:selected {
+    -fx-background-color: rgba(255, 127, 80, 0.75);
+}
+
+/**/
+#tree-table-row-bckgnd-ok {
+    -fx-background-color: rgba(0, 128, 0, 0.50);
+}
+
+#tree-table-row-bckgnd-ok:selected {
+    -fx-background-color: rgba(0, 128, 0, 0.75);
+}
+
+#tree-table-row-bckgnd-folder {
+    -fx-background-color: white;
+    -fx-cursor: hand;
+}
+
+/*#tree-table-row-bckgnd-folder:selected {
+    -fx-background-color: royalblue;
+} */
+
+#tree-table-row-bckgnd-folder:hover {
+     -fx-background-color: white;
+ }
+
+#tree-table-row-bckgnd-folder:hover .cell{
+    -fx-text-fill: royalblue;
+    -fx-underline: true;
+}

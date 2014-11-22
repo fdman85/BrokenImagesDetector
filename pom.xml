@@ -36,13 +36,19 @@
         <dependency>
             <groupId>org.controlsfx</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>8.20.7</version>
+            <version>8.0.6_20</version>
         </dependency>
         <dependency>
             <groupId>org.swinglabs.swingx</groupId>
             <artifactId>swingx-all</artifactId>
             <version>1.6.5</version>
         </dependency>
+        <dependency>
+            <groupId>org.rawdarkroom</groupId>
+            <artifactId>it.tidalwave.imageio.raw</artifactId>
+            <version>1.6.2-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
 

@@ -18,6 +18,8 @@ import javafx.scene.control.*;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
@@ -30,6 +32,7 @@ import javafx.util.StringConverter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.controlsfx.control.action.Action;
+import org.controlsfx.dialog.DefaultDialogAction;
 import org.controlsfx.dialog.Dialog;
 import org.controlsfx.dialog.Dialogs;
 import org.slf4j.Logger;
@@ -205,8 +208,60 @@ public class BidFx extends Application {
             nameCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<BytesProcessResult, String> p) -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getPath().toFile().getName()));
             statusCol.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null || p.getValue().getValue().getStatus() == null || p.getValue().getValue().getStatus() == Status.FOLDER ? "" : p.getValue().getValue().getStatus().toString()));
             descriptionColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDescription()));
-            detailsColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDetails()));
-            //nameCol.setSortable(false);
+            descriptionColumn.setCellFactory(param -> {
+
+                TreeTableCell<BytesProcessResult, String> cell = new TreeTableCell<BytesProcessResult, String>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        if (!empty &&
+                                !StringUtils.isBlank(item) &&
+                                getTreeTableRow().getTreeItem() != null &&
+                                getTreeTableRow().getTreeItem().getValue() != null) {
+                            TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
+                            Label lbl = new Label(StringUtils.replace(item, "\n", "; "));
+                            Button button = new Button("...");
+                            //button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
+                            HBox hBox = new HBox(lbl, button);
+                            button.getStyleClass().add("tree-table-row-bckgnd-with-status");
+                            button.setOnAction(event -> {
+                                getTreeTableView().getSelectionModel().select(treeItem);
+                                DefaultDialogAction copyToClipboard = new DefaultDialogAction("Copy to clipboard", Dialog.ActionTrait.CANCEL) {
+                                    @Override
+                                    public void handle(ActionEvent ae) {
+                                        final Clipboard clipboard = Clipboard.getSystemClipboard();
+                                        final ClipboardContent content = new ClipboardContent();
+                                        content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
+                                        clipboard.setContent(content);
+                                        setText("Copied");
+                                    }
+                                };
+                                Dialogs actions = Dialogs.create().
+                                        title("File processing description").
+                                        message(item).
+                                        masthead(treeItem.getValue().getPath().toString()).
+                                        actions(copyToClipboard,
+                                                new DefaultDialogAction("Ok", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT));
+                                switch (treeItem.getValue().getStatus()) {
+                                    case CRITICAL:
+                                    case ERROR:
+                                        actions.showInformation();
+                                        break;
+                                    case WARN:
+                                        actions.showWarning();
+                                        break;
+                                    default:
+                                        actions.showInformation();
+                                }
+                            });
+                            setGraphic(hBox);
+                        } else {
+                            setText(null);
+                            setGraphic(null);
+                        }
+                    }
+                };
+                return cell;
+            });
             columns.add(nameCol);
             columns.add(statusCol);
             columns.add(descriptionColumn);
@@ -645,6 +700,7 @@ public class BidFx extends Application {
 
         }
     }
+
 }
 
 

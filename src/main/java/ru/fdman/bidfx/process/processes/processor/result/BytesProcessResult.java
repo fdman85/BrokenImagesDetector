@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-public class BytesProcessResult implements Comparable<BytesProcessResult>{
+public class BytesProcessResult implements Comparable<BytesProcessResult> {
     private final Path path;
 
     public boolean isLeaf() {
@@ -58,8 +58,8 @@ public class BytesProcessResult implements Comparable<BytesProcessResult>{
         if (childProcessResult.getDescription() != null) {
             setDescription((getDescription() != null ? getDescription() + "\n" : "") + childProcessResult.resultName + ": " + childProcessResult.getDescription());
         }
-        if (childProcessResult.getDetails()!= null) {
-            setDetails((getDetails() != null ? getDetails() + "\n" : "") + childProcessResult.resultName  + ": "+childProcessResult.getDetails());
+        if (childProcessResult.getDetails() != null) {
+            setDetails((getDetails() != null ? getDetails() + "\n" : "") + childProcessResult.resultName + ": " + childProcessResult.getDetails());
         }
         setStatus(childProcessResult.getStatus());
     }
@@ -76,7 +76,7 @@ public class BytesProcessResult implements Comparable<BytesProcessResult>{
 
 
     public String toString2() {
-        return                 "path=" + path;
+        return "path=" + path;
     }
 
     public void setDescription(String description) {

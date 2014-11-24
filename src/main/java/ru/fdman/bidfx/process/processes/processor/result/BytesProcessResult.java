@@ -55,13 +55,16 @@ public class BytesProcessResult implements Comparable<BytesProcessResult>{
 
     public void addChildResult(BytesProcessResult childProcessResult) {
         childResults.add(childProcessResult);
-        setDescription(getDescription() + "\n" + childProcessResult.resultName  + ": "+childProcessResult.getDescription());
-        setDetails(getDetails() + "\n" + childProcessResult.resultName  + ": "+childProcessResult.getDetails());
+        if (childProcessResult.getDescription() != null) {
+            setDescription((getDescription() != null ? getDescription() + "\n" : "") + childProcessResult.resultName + ": " + childProcessResult.getDescription());
+        }
+        if (childProcessResult.getDetails()!= null) {
+            setDetails((getDetails() != null ? getDetails() + "\n" : "") + childProcessResult.resultName  + ": "+childProcessResult.getDetails());
+        }
         setStatus(childProcessResult.getStatus());
     }
 
-
-    //@Override
+    @Override
     public String toString() {
         return "BytesProcessResult{" +
                 "path=" + path +

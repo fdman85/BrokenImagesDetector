@@ -81,7 +81,7 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
                 case "JPEG":
                 case "JPG":
                 case "GIF":
-                    result.addChildResult(readAsCommonImage(bais));
+                    result.addChildResult(readAsCommonImage());
                     break;
             }
             if (result.getStatus() != Status.OK) {
@@ -93,17 +93,16 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
                 }
             }
         } catch (IOException e) {
-            BytesProcessResult processResult = new BytesProcessResult(path, "root result error");
-            processResult.setDescription(ExceptionUtils.getStackTrace(e));
-            processResult.setDetails(ExceptionUtils.getStackTrace(e));
-            processResult.setStatus(Status.SMTH_GOES_WRONG);
-            result.addChildResult(processResult);
+            result.setDescription(ExceptionUtils.getStackTrace(e));
+            result.setDetails(ExceptionUtils.getStackTrace(e));
+            result.setStatus(Status.SMTH_GOES_WRONG);
         }
         return result;
     }
 
-    protected BytesProcessResult readAsCommonImage(ByteArrayInputStream bais) {
+    protected BytesProcessResult readAsCommonImage() {
         BytesProcessResult readAsCommonImageResult = new BytesProcessResult(path, "Reading as standard image");
+
         try {
             java.awt.Toolkit.getDefaultToolkit().createImage(bytes);
         } catch (Exception e) {
@@ -141,8 +140,7 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
             final ImageReader reader = ImageIO.getImageReadersByFormatName(FilenameUtils.getExtension(file.getName())).next();
             reader.setInput(ImageIO.createImageInputStream(bais));
             reader.getImageMetadata(0);
-        } catch (Exception e) {
-
+        } catch (IOException e) {
             metaInfoResult.setDescription(ExceptionUtils.getMessage(e));
             metaInfoResult.setDetails(ExceptionUtils.getStackTrace(e));
             metaInfoResult.setStatus(Status.WARN);

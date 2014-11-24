@@ -220,7 +220,7 @@ public class BidFx extends Application {
                             TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
                             Label lbl = new Label(StringUtils.replace(item, "\n", "; "));
                             Button button = new Button("...");
-                            //button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
+                            button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
                             HBox hBox = new HBox(lbl, button);
                             button.getStyleClass().add("tree-table-row-bckgnd-with-status");
                             button.setOnAction(event -> {
@@ -244,7 +244,7 @@ public class BidFx extends Application {
                                 switch (treeItem.getValue().getStatus()) {
                                     case CRITICAL:
                                     case ERROR:
-                                        actions.showInformation();
+                                        actions.showError();
                                         break;
                                     case WARN:
                                         actions.showWarning();

@@ -208,60 +208,9 @@ public class BidFx extends Application {
             nameCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<BytesProcessResult, String> p) -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getPath().toFile().getName()));
             statusCol.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null || p.getValue().getValue().getStatus() == null || p.getValue().getValue().getStatus() == Status.FOLDER ? "" : p.getValue().getValue().getStatus().toString()));
             descriptionColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDescription()));
-            descriptionColumn.setCellFactory(param -> {
-
-                TreeTableCell<BytesProcessResult, String> cell = new TreeTableCell<BytesProcessResult, String>() {
-                    @Override
-                    protected void updateItem(String item, boolean empty) {
-                        if (!empty &&
-                                !StringUtils.isBlank(item) &&
-                                getTreeTableRow().getTreeItem() != null &&
-                                getTreeTableRow().getTreeItem().getValue() != null) {
-                            TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
-                            Label lbl = new Label(StringUtils.replace(item, "\n", "; "));
-                            Button button = new Button("...");
-                            button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
-                            HBox hBox = new HBox(lbl, button);
-                            button.getStyleClass().add("tree-table-row-bckgnd-with-status");
-                            button.setOnAction(event -> {
-                                getTreeTableView().getSelectionModel().select(treeItem);
-                                DefaultDialogAction copyToClipboard = new DefaultDialogAction("Copy to clipboard", Dialog.ActionTrait.CANCEL) {
-                                    @Override
-                                    public void handle(ActionEvent ae) {
-                                        final Clipboard clipboard = Clipboard.getSystemClipboard();
-                                        final ClipboardContent content = new ClipboardContent();
-                                        content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
-                                        clipboard.setContent(content);
-                                        setText("Copied");
-                                    }
-                                };
-                                Dialogs actions = Dialogs.create().
-                                        title("File processing description").
-                                        message(item).
-                                        masthead(treeItem.getValue().getPath().toString()).
-                                        actions(copyToClipboard,
-                                                new DefaultDialogAction("Ok", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT));
-                                switch (treeItem.getValue().getStatus()) {
-                                    case CRITICAL:
-                                    case ERROR:
-                                        actions.showError();
-                                        break;
-                                    case WARN:
-                                        actions.showWarning();
-                                        break;
-                                    default:
-                                        actions.showInformation();
-                                }
-                            });
-                            setGraphic(hBox);
-                        } else {
-                            setText(null);
-                            setGraphic(null);
-                        }
-                    }
-                };
-                return cell;
-            });
+            descriptionColumn.setCellFactory(new DescriptionAndDetailsCellFactory("File processing description"));
+            detailsColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDetails()));
+            detailsColumn.setCellFactory(new DescriptionAndDetailsCellFactory("File processing details"));
             columns.add(nameCol);
             columns.add(statusCol);
             columns.add(descriptionColumn);
@@ -270,6 +219,73 @@ public class BidFx extends Application {
         }
 
 
+        private class DescriptionAndDetailsCellFactory implements Callback<TreeTableColumn<BytesProcessResult, String>, TreeTableCell<BytesProcessResult, String>> {
+
+            private final String title;
+
+            public DescriptionAndDetailsCellFactory(String title) {
+                this.title = title;
+            }
+
+            @Override
+            public TreeTableCell<BytesProcessResult, String> call(TreeTableColumn<BytesProcessResult, String> param) {
+                TreeTableCell<BytesProcessResult, String> cell = new LabeledWithButtonTreeTableCell();
+                return cell;
+            }
+
+            private class LabeledWithButtonTreeTableCell extends TreeTableCell<BytesProcessResult, String> {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    if (!empty &&
+                            !StringUtils.isBlank(item) &&
+                            getTreeTableRow().getTreeItem() != null &&
+                            getTreeTableRow().getTreeItem().getValue() != null) {
+                        TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
+                        Label lbl = new Label(/*StringUtils.replace(item, "\n", "; ")*/item.replaceAll("\\s*[\\r\\n]+\\s*", "").trim());
+                        Button button = new Button("...");
+                        button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
+                        HBox hBox = new HBox(lbl, button);
+                        button.getStyleClass().add("tree-table-row-bckgnd-with-status");
+                        button.setOnAction(event -> {
+                            getTreeTableView().getSelectionModel().select(treeItem);
+                            DefaultDialogAction copyToClipboard = new DefaultDialogAction("Copy to clipboard", Dialog.ActionTrait.CANCEL) {
+                                @Override
+                                public void handle(ActionEvent ae) {
+                                    final Clipboard clipboard = Clipboard.getSystemClipboard();
+                                    final ClipboardContent content = new ClipboardContent();
+                                    content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
+                                    clipboard.setContent(content);
+                                    setText("Copied");
+                                }
+                            };
+                            String message = item.replaceAll("\\r\\n", "").trim();
+                            message = message.length() > 500 ? message.substring(0, 497) + "...\n\n...copy to clipboard to see full log" : message;
+                            Dialogs actions = Dialogs.create().
+                                    title(title).
+                                    message(message).
+                                    masthead(treeItem.getValue().getPath().toString()).
+                                    actions(copyToClipboard,
+                                            new DefaultDialogAction("Ok", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT));
+                            switch (treeItem.getValue().getStatus()) {
+                                case CRITICAL:
+                                case ERROR:
+                                    actions.showError();
+                                    break;
+                                case WARN:
+                                    actions.showWarning();
+                                    break;
+                                default:
+                                    actions.showInformation();
+                            }
+                        });
+                        setGraphic(hBox);
+                    } else {
+                        setText(null);
+                        setGraphic(null);
+                    }
+                }
+            }
+        }
     }
 
     private class FormController {

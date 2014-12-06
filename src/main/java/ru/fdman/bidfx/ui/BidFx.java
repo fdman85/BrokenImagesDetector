@@ -24,6 +24,7 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -92,7 +93,12 @@ public class BidFx extends Application {
 
         stage.setScene(scene);
 
+
+
         stage.show();
+
+        stage.setMinHeight(stage.getHeight());
+        stage.setMinWidth(stage.getWidth());
 
     }
 
@@ -126,21 +132,26 @@ public class BidFx extends Application {
             clauseFilterComboBox.setValue(Clause.EQUAL_OR_STRONGER);
             scanBtn.setMinWidth(90);
             moveRenameBtn.setMinWidth(90);
-
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
             treeTableView.setShowRoot(true);
         }
 
         private GridPane createMainGrid() {
             GridPane grid = new GridPane();
+            //grid.setGridLinesVisible(true);
             grid.setHgap(UIConstants.GAP_STD);
+
             grid.setVgap(UIConstants.GAP_STD);
             grid.setPadding(UIConstants.INSETS_STD);
             grid.setAlignment(Pos.CENTER);
 
-            grid.add(getExtensionsHbox(), 0, 0);
+            Node extensionsHbox = getExtensionsHbox();
+            grid.setHgrow(extensionsHbox, Priority.ALWAYS);
+            grid.add(extensionsHbox, 0, 0);
             grid.add(getSelectPathHbox(), 3, 0);
-            grid.add(getTreeTableViewVbox(), 0, 1, 4, 1);
+            Node treeTableViewVbox = getTreeTableViewVbox();
+            grid.setVgrow(treeTableViewVbox, Priority.ALWAYS);
+            grid.add(treeTableViewVbox, 0, 1, 4, 1);
             grid.add(getFilterHbox(), 0, 2, 1, 1);
             grid.add(getMoveRenameHbox(), 2, 2, 2, 1);
             return grid;
@@ -148,6 +159,7 @@ public class BidFx extends Application {
 
         private Node getTreeTableViewVbox() {
             VBox vBox = new VBox(10, treeTableView);
+            vBox.setVgrow(treeTableView, Priority.ALWAYS);
             vBox.setAlignment(Pos.CENTER_RIGHT);
             return vBox;
         }
@@ -170,7 +182,7 @@ public class BidFx extends Application {
         private Node getSelectPathHbox() {
             Label selectScanFolderLbl = new Label("Select folder to scan: ");
             folderPath.setMinWidth(350);
-            HBox selectPathHbox = new HBox(10, selectScanFolderLbl, folderPath, selectPathBtn, scanBtn, debugBtn);
+            HBox selectPathHbox = new HBox(10, selectScanFolderLbl, folderPath, selectPathBtn, scanBtn/*, debugBtn*/);
             selectPathHbox.setAlignment(Pos.CENTER_RIGHT);
             return selectPathHbox;
         }

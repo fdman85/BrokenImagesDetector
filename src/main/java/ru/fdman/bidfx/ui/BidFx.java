@@ -94,7 +94,6 @@ public class BidFx extends Application {
         stage.setScene(scene);
 
 
-
         stage.show();
 
         stage.setMinHeight(stage.getHeight());
@@ -115,11 +114,11 @@ public class BidFx extends Application {
         private DirectoryChooser directoryChooser = new DirectoryChooser(); //use file chooser cause it is more flexible (show files in folders)
         private ComboBox<Status> statusFilterComboBox = new ComboBox<>(FXCollections.observableArrayList(getStatusFilterComboboxItems()));
         private ComboBox<Clause> clauseFilterComboBox = new ComboBox<>(new ObservableListWrapper<>(Arrays.asList(Clause.values())));
-        private Button moveRenameBtn = new Button("Move&Rename");
+        private Button moveRenameBtn = new Button("Move&Rename...");
         private Button debugBtn = new Button("debug");
-        private Label moveRenameInfoLabel = new Label();
         private TreeTableView treeTableView = new TreeTableView();
-        //Please, select more meaningful status than SKIPPED for activating 'Rename' button
+        private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Move&Rename' button");
+
 
         public MainForm(Stage stage) {
             this.stage = stage;
@@ -167,6 +166,7 @@ public class BidFx extends Application {
         private Node getMoveRenameHbox() {
             HBox hbox = new HBox(10,
                     moveRenameInfoLabel,
+
                     moveRenameBtn);
             hbox.setAlignment(Pos.CENTER_RIGHT);
             return hbox;
@@ -465,6 +465,13 @@ public class BidFx extends Application {
             });
 
             mainForm.statusFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
+                if (newValue.getPriority() <= Status.SKIPPED.getPriority()) {
+                    mainForm.moveRenameInfoLabel.setText("Please, select more meaningful status than SKIPPED for activating 'Move&Rename' button");
+                    mainForm.moveRenameBtn.setDisable(true);
+                } else {
+                    mainForm.moveRenameBtn.setDisable(false);
+                    mainForm.moveRenameInfoLabel.setText("");
+                }
                 if (resultsTreePostProcessor != null) {
                     refreshTreeTableView();
                 }

@@ -17,7 +17,7 @@ import java.util.function.Predicate;
  * Created by fdman on 07.10.2014.
  */
 public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProcessResult> {
-    private final ExpandedPropertyListener expandedPropertyListener = new ExpandedPropertyListener();
+    private final ExpandedPropertyListener expandedPropertyListener = new ExpandedPropertyListener(); //для смены иконки
     private final Logger log = LoggerFactory
             .getLogger(ResultsTreePostProcessor.class);
     private final T root;
@@ -40,11 +40,18 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         return newTreeItem;
     }
 
+    /**
+     * Итерироваться по дереву и отсортировать его с помощью sortTreeCallback (фильтруем детей текущего parentTreeItem в
+     * Consumer sortTreeCallback), а также отфильтровать листья с помощью Predicate filterValuesCallback
+     * @param parentTreeItem
+     * @param sortTreeCallback
+     * @param filterValuesCallback
+     */
     public void sortAndFilterTree(final T parentTreeItem, final Consumer<T> sortTreeCallback,
                                   Predicate<T> filterValuesCallback) {
-        sortTreeCallback.accept(parentTreeItem);
+        sortTreeCallback.accept(parentTreeItem); //остортируем "детей"
         ObservableList<T> children = (ObservableList<T>) parentTreeItem.getChildren();
-        children.removeAll(children.filtered(filterValuesCallback));
+        children.removeAll(children.filtered(filterValuesCallback)); //профильтруем все что нужно
         for (T childItem : children) {
             sortAndFilterTree(childItem, sortTreeCallback, filterValuesCallback);
         }

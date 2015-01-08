@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.*;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventDispatchChain;
 import javafx.event.EventDispatcher;
@@ -30,6 +31,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javafx.util.StringConverter;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.controlsfx.control.action.Action;
@@ -166,7 +168,6 @@ public class BidFx extends Application {
         private Node getMoveRenameHbox() {
             HBox hbox = new HBox(10,
                     moveRenameInfoLabel,
-
                     moveRenameBtn);
             hbox.setAlignment(Pos.CENTER_RIGHT);
             return hbox;
@@ -301,9 +302,7 @@ public class BidFx extends Application {
     }
 
     private class FormController {
-        private final Logger log = LoggerFactory
-                .getLogger(FormController.class);
-
+        private final Logger log = LoggerFactory.getLogger(FormController.class);
         private final MainForm mainForm;
         private Scene scene;
         private FormConfigController formConfigController;
@@ -336,6 +335,13 @@ public class BidFx extends Application {
             setupFileTypeCheckBoxesBehavior();
             setupScanBtnBehavior();
             setupFilterComboboxesBehaviour();
+            setupMoveRenameBtnBehaviour();
+        }
+
+        private void setupMoveRenameBtnBehaviour() {
+            mainForm.moveRenameBtn.setOnAction(new MoveRenameBtnEventHandler());
+
+
         }
 
         private void setupMainTreeTableBehaviour() {
@@ -378,11 +384,7 @@ public class BidFx extends Application {
                                         if (selectedItem != null) {
                                             BytesProcessResult processResult = (BytesProcessResult) selectedItem.getValue();
                                             if (processResult != null && !processResult.isLeaf()) {
-                                                /*System.err.println(event + " tadam event");
-                                                selectedItem.setExpanded(!
-                                                                selectedItem.isExpanded()
-                                                );*/
-                                                //Do nothing on dbl click to folder in treetablegrid
+                                                //Do nothing on dbl click to folder in tree table grid
                                                 event.consume();
                                             }
                                         }
@@ -503,15 +505,7 @@ public class BidFx extends Application {
 
         private void setupDebugBtnBehavior() {
             mainForm.debugBtn.setOnAction(event -> {
-
-                //formConfigController.save(formConfig);
-
-
-                /*System.err.println("debug msg:" + formConfig.getFolderPath());
-                System.err.println("debug msg:" + formConfig.getJpgCheckBoxSelectedState());
-                System.err.println("debug msg:" + formConfig.getGifCheckBoxSelectedState());
-                System.err.println("debug msg:" + formConfig.getNefCheckBoxSelectedState());
-                System.err.println("debug msg:" + formConfig.getBidCheckBoxSelectedState());*/
+                //nothing
             });
         }
 
@@ -733,6 +727,54 @@ public class BidFx extends Application {
                 mainForm.treeTableView.setRoot(tmpForViewRoot);
             }
 
+        }
+
+        private class MoveRenameBtnEventHandler implements EventHandler<ActionEvent> {
+
+            List<String> renamedFilesList = new ArrayList<>();
+
+            @Override
+            public void handle(ActionEvent event) {
+                TreeItem<BytesProcessResult> root = mainForm.treeTableView.getRoot();
+                iterateTree(root);
+                Dialogs.create().
+                        message(renamedFilesList.toString()).
+                        title("Renamed files list").
+                        showInformation();
+            }
+
+            private void iterateTree(final TreeItem<BytesProcessResult> parentTreeItem) {
+                ObservableList<TreeItem<BytesProcessResult>> children = parentTreeItem.getChildren();
+                for (TreeItem<BytesProcessResult> childItem : children) {
+                    iterateTree(childItem);
+                    String renamedFileName = moveOrRenameItemIfNeeded(childItem.getValue());
+                    if (renamedFileName != null) {
+                        renamedFilesList.add(renamedFileName);
+                        log.trace("{} renamed to {}", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
+                    } else {
+                        log.trace("{} was not renamed", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
+                    }
+                }
+            }
+
+            private String moveOrRenameItemIfNeeded(BytesProcessResult processResult) {
+                String newFileName = null;
+                try {
+                    if (processResult.isLeaf()) {
+                        File file = processResult.getPath().toFile();
+                        if (file.exists() && !FilenameUtils.getExtension(file.getName()).toUpperCase().equals("BID")) {
+                            newFileName = file.getAbsolutePath() + "." + processResult.getStatus().toString().toLowerCase() + ".bid";
+                            file.renameTo(new File(newFileName));
+                            //Files.copy(processResult.getPath(), new File(newFileName).toPath(), StandardCopyOption.ATOMIC_MOVE/*, StandardCopyOption.COPY_ATTRIBUTES*/);
+                        }
+
+                    }
+                } catch (Exception e) {
+                    log.error("Renaming of {} exception {}", processResult.getPath().toAbsolutePath().toString(), ExceptionUtils.getStackTrace(e));
+                    newFileName = null;
+                }
+                return newFileName;
+            }
         }
     }
 

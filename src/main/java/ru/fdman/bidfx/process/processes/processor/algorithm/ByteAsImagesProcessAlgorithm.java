@@ -81,6 +81,7 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
                 case "JPEG":
                 case "JPG":
                 case "GIF":
+                case "BID":
                     result.addChildResult(readAsCommonImage());
                     break;
             }
@@ -137,14 +138,27 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
     protected BytesProcessResult tryToReadMetaInfo(ByteArrayInputStream bais) {
         BytesProcessResult metaInfoResult = new BytesProcessResult(path, "Meta info reading");
         try {
-            final ImageReader reader = ImageIO.getImageReadersByFormatName(FilenameUtils.getExtension(file.getName())).next();
+            String extension = FilenameUtils.getExtension(file.getName());
+            if (extension.toUpperCase().equals("BID")) {
+                String[] extensions = file.getName().split("\\.");
+                if (extensions.length >= 3) {
+                    extension = extensions[extensions.length - 3];
+                    if (!(extension.toUpperCase().equals("JPG") ||
+                            extension.toUpperCase().equals("JPEG") ||
+                            extension.toUpperCase().equals("GIF") ||
+                            extension.toUpperCase().equals("PNG") ||
+                            extension.toUpperCase().equals("NEF"))) {
+                        return metaInfoResult;
+                    }
+                }
+            }
+            final ImageReader reader = ImageIO.getImageReadersByFormatName(extension).next();
             reader.setInput(ImageIO.createImageInputStream(bais));
             reader.getImageMetadata(0);
         } catch (IOException e) {
             metaInfoResult.setDescription(ExceptionUtils.getMessage(e));
             metaInfoResult.setDetails(ExceptionUtils.getStackTrace(e));
             metaInfoResult.setStatus(Status.WARN);
-
         }
         return metaInfoResult;
 

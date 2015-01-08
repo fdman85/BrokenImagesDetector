@@ -143,7 +143,8 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
                 String[] extensions = file.getName().split("\\.");
                 if (extensions.length >= 3) {
                     extension = extensions[extensions.length - 3];
-                    if (!(extension.toUpperCase().equals("JPG") ||
+
+                    if (!(extension.toUpperCase().equals("JPG") || //better to use FilenameUtils.isExtension() here ...
                             extension.toUpperCase().equals("JPEG") ||
                             extension.toUpperCase().equals("GIF") ||
                             extension.toUpperCase().equals("PNG") ||

@@ -731,30 +731,43 @@ public class BidFx extends Application {
 
         private class MoveRenameBtnEventHandler implements EventHandler<ActionEvent> {
 
-            List<String> renamedFilesList = new ArrayList<>();
+            List<String> renamedTotalFilesList;
 
             @Override
             public void handle(ActionEvent event) {
                 TreeItem<BytesProcessResult> root = mainForm.treeTableView.getRoot();
+                renamedTotalFilesList = new ArrayList<>();
                 iterateTree(root);
+                makeReportAndStore(renamedTotalFilesList, root.getValue().getPath().toAbsolutePath().toString());
                 Dialogs.create().
-                        message(renamedFilesList.toString()).
-                        title("Renamed files list").
+                        message(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed").
+                        title(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information").
                         showInformation();
             }
 
             private void iterateTree(final TreeItem<BytesProcessResult> parentTreeItem) {
                 ObservableList<TreeItem<BytesProcessResult>> children = parentTreeItem.getChildren();
+                List<String> renamedAtCurrentLevelFilesList = new ArrayList<>();
                 for (TreeItem<BytesProcessResult> childItem : children) {
                     iterateTree(childItem);
                     String renamedFileName = moveOrRenameItemIfNeeded(childItem.getValue());
+
                     if (renamedFileName != null) {
-                        renamedFilesList.add(renamedFileName);
+                        renamedTotalFilesList.add(renamedFileName);
+                        renamedAtCurrentLevelFilesList.add(renamedFileName);
                         log.trace("{} renamed to {}", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
                     } else {
                         log.trace("{} was not renamed", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
                     }
+
                 }
+
+                makeReportAndStore(renamedAtCurrentLevelFilesList, parentTreeItem.getValue().getPath().toAbsolutePath().toString());
+            }
+
+            private void makeReportAndStore(List<String> renamedFilesList, String reportFolder) {
+                log.error("TODO make report file {} {}", renamedFilesList.size(), reportFolder);
+
             }
 
             private String moveOrRenameItemIfNeeded(BytesProcessResult processResult) {

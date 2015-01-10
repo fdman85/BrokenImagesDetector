@@ -48,6 +48,11 @@
             <artifactId>it.tidalwave.imageio.raw</artifactId>
             <version>1.6.2-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.21</version>
+        </dependency>
 
     </dependencies>
 

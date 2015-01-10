@@ -1,6 +1,10 @@
 package ru.fdman.bidfx.ui;
 
 import com.sun.javafx.collections.ObservableListWrapper;
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import freemarker.template.TemplateException;
+import freemarker.template.TemplateExceptionHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -55,6 +59,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.awt.*;
 import java.io.*;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
@@ -309,6 +314,7 @@ public class BidFx extends Application {
         private FormConfig formConfig;
         private ScanBtnEventHandler scanBtnEventHandler;
         private ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult> resultsTreePostProcessor;
+        private Configuration freeMarkerCfg;
 
         private FormController(MainForm mainForm) {
             this.mainForm = mainForm;
@@ -326,7 +332,8 @@ public class BidFx extends Application {
         }
 
 
-        private void setupComponentsBehavior() {
+        private void setupComponentsBehavior() throws IOException, URISyntaxException {
+            setupFreeMarkerEngine();
             setupMainTreeTableBehaviour();
             setupMainFormCloseBehavior();
             setupDebugBtnBehavior();
@@ -336,6 +343,17 @@ public class BidFx extends Application {
             setupScanBtnBehavior();
             setupFilterComboboxesBehaviour();
             setupMoveRenameBtnBehaviour();
+        }
+
+        private void setupFreeMarkerEngine() throws IOException, URISyntaxException {
+            freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_21);
+            freeMarkerCfg = new Configuration();
+            freeMarkerCfg.setDirectoryForTemplateLoading(new File(this.getClass().getClassLoader().getResource("freemarker").toURI()));
+            //Template freemarkerTemplate = freeMarkerCfg.getTemplate("email/vendor.tpl");
+
+            //freeMarkerCfg.setDirectoryForTemplateLoading(new File());
+            freeMarkerCfg.setDefaultEncoding("UTF-8");
+            freeMarkerCfg.setTemplateExceptionHandler(TemplateExceptionHandler.DEBUG_HANDLER);
         }
 
         private void setupMoveRenameBtnBehaviour() {
@@ -766,8 +784,28 @@ public class BidFx extends Application {
             }
 
             private void makeReportAndStore(List<String> renamedFilesList, String reportFolder) {
-                log.error("TODO make report file {} {}", renamedFilesList.size(), reportFolder);
-
+                try {
+                    Date time = Calendar.getInstance().getTime();
+                    Template template = freeMarkerCfg.getTemplate("folderReportEn.ftl");
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("appVersionTitle", UIConstants.MAIN_TITLE);
+                    data.put("currentDir", reportFolder);
+                    data.put("filesCount", renamedFilesList.size());
+                    data.put("dateTime", time.toString());
+                    data.put("files", renamedFilesList);
+                    data.put("fullReportPathAndName", "TODO"); //TODO
+                    Writer out = new OutputStreamWriter(System.out);
+                    template.process(data, out);
+                    out.flush();
+                    Writer file = new FileWriter(new File(reportFolder +File.separator+ "BID report " + time + ".txt"));      //TODO fix time
+                    template.process(data, file);
+                    file.flush();
+                    file.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } catch (TemplateException e) {
+                    e.printStackTrace();
+                }
             }
 
             private String moveOrRenameItemIfNeeded(BytesProcessResult processResult) {

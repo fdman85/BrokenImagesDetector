@@ -761,22 +761,36 @@ public class BidFx extends Application {
 
             @Override
             public void handle(ActionEvent event) {
-                localDateTime = LocalDateTime.now();
-                dateTimeForReportFileName = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss").format(localDateTime);
-                dateTimeForReportText = DateTimeFormatter.ofPattern("dd MMM YYYY HH:mm:ss").format(localDateTime);
-                root = mainForm.treeTableView.getRoot();
-                totalReportName = root.getValue().getPath().toAbsolutePath().toString() + File.separator
-                        + "~BID total report "
-                        + this.dateTimeForReportFileName
-                        + ".txt";
-                renamedTotalFilesList = new ArrayList<>();
-                notRenamedTotalFilesList = new ArrayList<>();
-                iterateTree(root);
-                makeTotalReportAndStore();
                 Dialogs.create().
-                        message(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed").
-                        title(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information").
-                        showInformation();
+                        title("Please, confirm").
+                        message("All not *.bid files at the table will be renamed with \"<status>.bid\" postfix. Continue?").
+                        actions(new DefaultDialogAction("Continue", Dialog.ActionTrait.CLOSING) {
+
+                            @Override
+                            public void handle(ActionEvent ae) {
+                                super.handle(ae);
+                                localDateTime = LocalDateTime.now();
+                                dateTimeForReportFileName = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss").format(localDateTime);
+                                dateTimeForReportText = DateTimeFormatter.ofPattern("dd MMM YYYY HH:mm:ss").format(localDateTime);
+                                root = mainForm.treeTableView.getRoot();
+                                totalReportName = root.getValue().getPath().toAbsolutePath().toString() + File.separator
+                                        + "~BID total report "
+                                        + dateTimeForReportFileName
+                                        + ".txt";
+                                renamedTotalFilesList = new ArrayList<>();
+                                notRenamedTotalFilesList = new ArrayList<>();
+                                iterateTree(root);
+                                makeTotalReportAndStore();
+
+                                Platform.runLater(() ->
+                                        Dialogs.create().
+                                                message(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed").
+                                                title(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information").
+                                                showInformation());
+                            }
+                        }, new DefaultDialogAction("Cancel", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT)).
+                        showConfirm();
+
             }
 
             private void iterateTree(final TreeItem<BytesProcessResult> parentTreeItem) {

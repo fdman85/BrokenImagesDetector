@@ -60,6 +60,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import java.awt.*;
 import java.io.*;
 import java.net.URISyntaxException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.prefs.BackingStoreException;
@@ -121,10 +123,10 @@ public class BidFx extends Application {
         private DirectoryChooser directoryChooser = new DirectoryChooser(); //use file chooser cause it is more flexible (show files in folders)
         private ComboBox<Status> statusFilterComboBox = new ComboBox<>(FXCollections.observableArrayList(getStatusFilterComboboxItems()));
         private ComboBox<Clause> clauseFilterComboBox = new ComboBox<>(new ObservableListWrapper<>(Arrays.asList(Clause.values())));
-        private Button moveRenameBtn = new Button("Move&Rename...");
+        private Button moveRenameBtn = new Button("Rename...");
         private Button debugBtn = new Button("debug");
         private TreeTableView treeTableView = new TreeTableView();
-        private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Move&Rename' button");
+        private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
 
 
         public MainForm(Stage stage) {
@@ -486,7 +488,7 @@ public class BidFx extends Application {
 
             mainForm.statusFilterComboBox.valueProperty().addListener((observable, oldValue, newValue) -> {
                 if (newValue.getPriority() <= Status.SKIPPED.getPriority()) {
-                    mainForm.moveRenameInfoLabel.setText("Please, select more meaningful status than SKIPPED for activating 'Move&Rename' button");
+                    mainForm.moveRenameInfoLabel.setText("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
                     mainForm.moveRenameBtn.setDisable(true);
                 } else {
                     mainForm.moveRenameBtn.setDisable(false);
@@ -749,14 +751,28 @@ public class BidFx extends Application {
 
         private class MoveRenameBtnEventHandler implements EventHandler<ActionEvent> {
 
-            List<String> renamedTotalFilesList;
+            private List<String> renamedTotalFilesList;
+            private List<String> notRenamedTotalFilesList;
+            private TreeItem<BytesProcessResult> root;
+            private LocalDateTime localDateTime;
+            private String dateTimeForReportFileName;
+            private String dateTimeForReportText;
+            private String totalReportName;
 
             @Override
             public void handle(ActionEvent event) {
-                TreeItem<BytesProcessResult> root = mainForm.treeTableView.getRoot();
+                localDateTime = LocalDateTime.now();
+                dateTimeForReportFileName = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss").format(localDateTime);
+                dateTimeForReportText = DateTimeFormatter.ofPattern("dd MMM YYYY HH:mm:ss").format(localDateTime);
+                root = mainForm.treeTableView.getRoot();
+                totalReportName = root.getValue().getPath().toAbsolutePath().toString() + File.separator
+                        + "~BID total report "
+                        + this.dateTimeForReportFileName
+                        + ".txt";
                 renamedTotalFilesList = new ArrayList<>();
+                notRenamedTotalFilesList = new ArrayList<>();
                 iterateTree(root);
-                makeReportAndStore(renamedTotalFilesList, root.getValue().getPath().toAbsolutePath().toString());
+                makeTotalReportAndStore();
                 Dialogs.create().
                         message(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed").
                         title(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information").
@@ -768,63 +784,111 @@ public class BidFx extends Application {
                 List<String> renamedAtCurrentLevelFilesList = new ArrayList<>();
                 for (TreeItem<BytesProcessResult> childItem : children) {
                     iterateTree(childItem);
-                    String renamedFileName = moveOrRenameItemIfNeeded(childItem.getValue());
 
-                    if (renamedFileName != null) {
-                        renamedTotalFilesList.add(renamedFileName);
+                    BytesProcessResult bytesProcessResult = childItem.getValue();
+                    String renamedFileName = getNewFileName(bytesProcessResult);
+                    if (isNeedToRename(bytesProcessResult) && renameFile(bytesProcessResult.getPath().toFile(), renamedFileName)) {
                         renamedAtCurrentLevelFilesList.add(renamedFileName);
-                        log.trace("{} renamed to {}", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
+                        renamedTotalFilesList.add(bytesProcessResult.getPath().toAbsolutePath().toString() + " renamed to " + FilenameUtils.getName(renamedFileName));
+                        log.trace("{} renamed to {}", bytesProcessResult.getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
                     } else {
-                        log.trace("{} was not renamed", childItem.getValue().getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));
+                        if (bytesProcessResult.getStatus() != Status.FOLDER) {
+                            notRenamedTotalFilesList.add(bytesProcessResult.getPath().toAbsolutePath().toString() + " was not renamed");
+                            log.trace("{} was not renamed", bytesProcessResult.getPath().toAbsolutePath().toString());
+                        }
                     }
-
                 }
-
-                makeReportAndStore(renamedAtCurrentLevelFilesList, parentTreeItem.getValue().getPath().toAbsolutePath().toString());
+                makeFolderReportAndStore(renamedAtCurrentLevelFilesList, parentTreeItem.getValue().getPath().toAbsolutePath().toString());
             }
 
-            private void makeReportAndStore(List<String> renamedFilesList, String reportFolder) {
-                try {
-                    Date time = Calendar.getInstance().getTime();
-                    Template template = freeMarkerCfg.getTemplate("folderReportEn.ftl");
+            private void makeFolderReportAndStore(List<String> renamedFilesList, String reportFolder) {
+                if (renamedFilesList.size() > 0) {
+                    Template template;
+                    try {
+                        template = freeMarkerCfg.getTemplate("folderReportEn.ftl");
+                    } catch (IOException e) {
+                        log.error("{}", ExceptionUtils.getStackTrace(e));
+                        return;
+                    }
+
                     Map<String, Object> data = new HashMap<>();
                     data.put("appVersionTitle", UIConstants.MAIN_TITLE);
                     data.put("currentDir", reportFolder);
-                    data.put("filesCount", renamedFilesList.size());
-                    data.put("dateTime", time.toString());
+                    data.put("dateTime", "" + dateTimeForReportText);
+
+                    data.put("renamingInfo", notRenamedTotalFilesList.size() > 0 ? "Renamed " + renamedTotalFilesList.size() + " file(-s) at " + dateTimeForReportText : "");
                     data.put("files", renamedFilesList);
-                    data.put("fullReportPathAndName", "TODO"); //TODO
-                    Writer out = new OutputStreamWriter(System.out);
-                    template.process(data, out);
-                    out.flush();
-                    Writer file = new FileWriter(new File(reportFolder +File.separator+ "BID report " + time + ".txt"));      //TODO fix time
-                    template.process(data, file);
-                    file.flush();
-                    file.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (TemplateException e) {
-                    e.printStackTrace();
+
+                    data.put("fullReportPathAndName", totalReportName);
+
+                    String fileName = reportFolder + File.separator
+                            + "~BID report "
+                            + this.dateTimeForReportFileName
+                            + ".txt";
+                    processFreeMarkerTemplate(template,
+                            fileName, data);
+                }
+
+            }
+
+            private void makeTotalReportAndStore() {
+                if (renamedTotalFilesList.size() > 0 || notRenamedTotalFilesList.size() > 0) {
+                    Template template;
+                    try {
+                        template = freeMarkerCfg.getTemplate("totalReportEn.ftl");
+                    } catch (IOException e) {
+                        log.error("{}", ExceptionUtils.getStackTrace(e));
+                        return;
+                    }
+
+                    Map<String, Object> data = new HashMap<>();
+                    data.put("appVersionTitle", UIConstants.MAIN_TITLE);
+                    data.put("dateTime", dateTimeForReportText);
+                    data.put("rootDir", root.getValue().getPath().toAbsolutePath());
+
+                    data.put("renamingInfo", renamedTotalFilesList.size() > 0 ? "Renamed " + renamedTotalFilesList.size() + " file(-s) at " + dateTimeForReportText : "");
+                    data.put("okFiles", renamedTotalFilesList);
+
+                    data.put("renamingErrors", notRenamedTotalFilesList.size() > 0 ? notRenamedTotalFilesList.size() + " files were not renamed" : "");
+                    data.put("errFiles", notRenamedTotalFilesList);
+
+                    processFreeMarkerTemplate(template,
+                            totalReportName, data);
+                }
+
+            }
+
+            private void processFreeMarkerTemplate(Template template, String fileName, Map<String, Object> data) {
+                try (Writer fileWriter = new FileWriter(new File(fileName));) {
+                    template.process(data, fileWriter);
+                    fileWriter.flush();
+                } catch (IOException | TemplateException e) {
+                    log.error("{}", ExceptionUtils.getStackTrace(e));
                 }
             }
 
-            private String moveOrRenameItemIfNeeded(BytesProcessResult processResult) {
-                String newFileName = null;
-                try {
-                    if (processResult.isLeaf()) {
-                        File file = processResult.getPath().toFile();
-                        if (file.exists() && !FilenameUtils.getExtension(file.getName()).toUpperCase().equals("BID")) {
-                            newFileName = file.getAbsolutePath() + "." + processResult.getStatus().toString().toLowerCase() + ".bid";
-                            file.renameTo(new File(newFileName));
-                            //Files.copy(processResult.getPath(), new File(newFileName).toPath(), StandardCopyOption.ATOMIC_MOVE/*, StandardCopyOption.COPY_ATTRIBUTES*/);
-                        }
-
+            private boolean isNeedToRename(BytesProcessResult processResult) {
+                if (processResult.isLeaf()) {
+                    File file = processResult.getPath().toFile();
+                    if (file.exists() && !file.isDirectory() && !FilenameUtils.getExtension(file.getName()).toUpperCase().equals("BID")) {
+                        return true;
                     }
-                } catch (Exception e) {
-                    log.error("Renaming of {} exception {}", processResult.getPath().toAbsolutePath().toString(), ExceptionUtils.getStackTrace(e));
-                    newFileName = null;
                 }
-                return newFileName;
+                return false;
+            }
+
+            private String getNewFileName(BytesProcessResult processResult) {
+                return processResult.getPath().toFile().getAbsolutePath() + "." + processResult.getStatus().toString().toLowerCase() + ".bid";
+            }
+
+            private boolean renameFile(File oldFile, String newFileName) {
+                try {
+                    oldFile.renameTo(new File(newFileName));
+                    return true;
+                } catch (Exception e) {
+                    log.error("Renaming of {} exception {}", oldFile.getAbsoluteFile().toString(), ExceptionUtils.getStackTrace(e));
+                }
+                return false;
             }
         }
     }
@@ -833,7 +897,7 @@ public class BidFx extends Application {
 
 
 class UIConstants {
-    private static final String APP_NAME = "Broken Images Detector Fx ";
+    private static final String APP_NAME = "Broken Images Detector Fx";
     public static final String VERSION = "0.1";
     public static final String STATE = "Developer version";
     public static final String MAIN_TITLE = APP_NAME + " " + VERSION + (StringUtils.isBlank(STATE) ? "" : " ") + STATE;

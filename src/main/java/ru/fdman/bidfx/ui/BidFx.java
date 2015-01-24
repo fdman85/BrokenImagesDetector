@@ -18,9 +18,10 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
 import javafx.scene.control.*;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.input.Clipboard;
@@ -38,10 +39,7 @@ import javafx.util.StringConverter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.controlsfx.control.action.Action;
-import org.controlsfx.dialog.DefaultDialogAction;
-import org.controlsfx.dialog.Dialog;
-import org.controlsfx.dialog.Dialogs;
+import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.FileType;
@@ -127,6 +125,9 @@ public class BidFx extends Application {
         private Button debugBtn = new Button("debug");
         private TreeTableView treeTableView = new TreeTableView();
         private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
+        //private Label statusBarLabel = new Label("TODO");
+        private StatusBar statusBar = new StatusBar();
+        //private ProgressBar progressBar = new ProgressBar(0);
 
 
         public MainForm(Stage stage) {
@@ -146,7 +147,7 @@ public class BidFx extends Application {
 
         private GridPane createMainGrid() {
             GridPane grid = new GridPane();
-            //grid.setGridLinesVisible(true);
+            grid.setGridLinesVisible(true);
             grid.setHgap(UIConstants.GAP_STD);
 
             grid.setVgap(UIConstants.GAP_STD);
@@ -162,6 +163,10 @@ public class BidFx extends Application {
             grid.add(treeTableViewVbox, 0, 1, 4, 1);
             grid.add(getFilterHbox(), 0, 2, 1, 1);
             grid.add(getMoveRenameHbox(), 2, 2, 2, 1);
+            Node statusBarHbox = getStatusBarHbox();
+            grid.setHgrow(statusBarHbox, Priority.ALWAYS);
+            grid.setVgrow(statusBarHbox, Priority.ALWAYS);
+            grid.add(statusBarHbox, 0, 3, 4, 1);
             return grid;
         }
 
@@ -177,6 +182,16 @@ public class BidFx extends Application {
                     moveRenameInfoLabel,
                     moveRenameBtn);
             hbox.setAlignment(Pos.CENTER_RIGHT);
+            return hbox;
+        }
+
+        private Node getStatusBarHbox() {
+
+            HBox hbox = new HBox(10,
+                    statusBar);
+            //hbox.setHgrow(progressBar, Priority.ALWAYS);
+            //TODO status bar
+//            hbox.setAlignment(Pos.CENTER_RIGHT);
             return hbox;
         }
 
@@ -261,42 +276,75 @@ public class BidFx extends Application {
                             getTreeTableRow().getTreeItem() != null &&
                             getTreeTableRow().getTreeItem().getValue() != null) {
                         TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
-                        Label lbl = new Label(/*StringUtils.replace(item, "\n", "; ")*/item.replaceAll("\\s*[\\r\\n]+\\s*", "").trim());
+                        Label lbl = new Label(item.replaceAll("\\s*[\\r\\n]+\\s*", "").trim());
                         Button button = new Button("...");
                         button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
                         HBox hBox = new HBox(lbl, button);
                         button.getStyleClass().add("tree-table-row-bckgnd-with-status");
                         button.setOnAction(event -> {
                             getTreeTableView().getSelectionModel().select(treeItem);
-                            DefaultDialogAction copyToClipboard = new DefaultDialogAction("Copy to clipboard", Dialog.ActionTrait.CANCEL) {
-                                @Override
-                                public void handle(ActionEvent ae) {
-                                    final Clipboard clipboard = Clipboard.getSystemClipboard();
-                                    final ClipboardContent content = new ClipboardContent();
-                                    content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
-                                    clipboard.setContent(content);
-                                    setText("Copied");
-                                }
-                            };
                             String message = item.replaceAll("\\r\\n", "").trim();
-                            message = message.length() > 500 ? message.substring(0, 497) + "...\n\n...copy to clipboard to see full log" : message;
-                            Dialogs actions = Dialogs.create().
-                                    title(title).
-                                    message(message).
-                                    masthead(treeItem.getValue().getPath().toString()).
-                                    actions(copyToClipboard,
-                                            new DefaultDialogAction("Ok", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT));
+                            message = message.length() > 2000 ? message.substring(0, 1997) + "...\n\n... U can copy to clipboard the full log" : message;
+                            ///
+                            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle(title);
+                            alert.setHeaderText(null);
+                            alert.setContentText(treeItem.getValue().getPath().toString());
+
+
+
+// Create expandable Exception.
+                            Label label = new Label("The exception stacktrace was:");
+
+                            TextArea textArea = new TextArea(message);
+                            textArea.setEditable(false);
+                            textArea.setWrapText(true);
+
+                            textArea.setMaxWidth(Double.MAX_VALUE);
+                            textArea.setMaxHeight(Double.MAX_VALUE);
+                            GridPane.setVgrow(textArea, Priority.ALWAYS);
+                            GridPane.setHgrow(textArea, Priority.ALWAYS);
+                            GridPane expContent = new GridPane();
+                            expContent.setMaxWidth(Double.MAX_VALUE);
+                            expContent.add(label, 0, 0);
+                            expContent.add(textArea, 0, 1);
+                            alert.getDialogPane().setExpandableContent(expContent);
+
+                            //TODO exception show
+
+                            ButtonType buttonTypeCopy = new ButtonType("Copy details to clipboard");
+                            ButtonType buttonTypeOk = new ButtonType("Ok", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                            alert.getButtonTypes().setAll(buttonTypeCopy, buttonTypeOk);
+
+                            final Button buttonCopy = (Button) alert.getDialogPane().lookupButton(buttonTypeCopy);
+                            buttonCopy.addEventFilter(ActionEvent.ACTION, (e) -> {
+                                buttonCopy.setText("Copied");
+                                e.consume();
+                            });
                             switch (treeItem.getValue().getStatus()) {
                                 case CRITICAL:
                                 case ERROR:
-                                    actions.showError();
+                                    alert.setAlertType(Alert.AlertType.ERROR);
                                     break;
                                 case WARN:
-                                    actions.showWarning();
+                                    alert.setAlertType(Alert.AlertType.WARNING);
                                     break;
                                 default:
-                                    actions.showInformation();
+                                    alert.setAlertType(Alert.AlertType.INFORMATION);
                             }
+
+                            Optional<ButtonType> result = alert.showAndWait();
+                            if (result.get() == buttonTypeCopy) {
+                                final Clipboard clipboard = Clipboard.getSystemClipboard();
+                                final ClipboardContent content = new ClipboardContent();
+                                content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
+                                clipboard.setContent(content);
+                                //buttonTypeCopy.getButtonData().
+                            } else {
+
+                            }
+                            ///
                         });
                         setGraphic(hBox);
                     } else {
@@ -349,7 +397,6 @@ public class BidFx extends Application {
 
         private void setupFreeMarkerEngine() throws IOException, URISyntaxException {
             freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_21);
-            freeMarkerCfg = new Configuration();
             freeMarkerCfg.setDirectoryForTemplateLoading(new File(this.getClass().getClassLoader().getResource("freemarker").toURI()));
             //Template freemarkerTemplate = freeMarkerCfg.getTemplate("email/vendor.tpl");
 
@@ -565,7 +612,10 @@ public class BidFx extends Application {
                     if (checkIsValidFolder(selectedFolder)) {
                         mainForm.folderPath.setText(selectedFolder.getAbsolutePath());
                     } else {
-                        Dialogs.create().message("Please, select a valid folder.\nYou must to have read permissions on it.").title("Warning").showInformation();
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setHeaderText(null);
+                        alert.setContentText("Please, select a valid folder.\nYou must to have read permissions on it.");
+                        alert.show();
                     }
                 }
             });
@@ -655,16 +705,21 @@ public class BidFx extends Application {
                 if (scanning) {
                     scanPerformer.pauseScan();
                     Platform.runLater(() -> {
-                        Action response = Dialogs.create()
-                                .title("Confirm")
-                                .message("Scan is in progress. Cancel?")
-                                .actions(Dialog.Actions.OK, Dialog.Actions.CANCEL)
-                                .showConfirm();
-                        if (response == Dialog.Actions.OK) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Confirm");
+                        alert.setHeaderText(null);
+                        alert.setContentText("Scan is in progress. Cancel?");
+
+                        ButtonType buttonTypeYes = new ButtonType("Yes");
+                        ButtonType buttonTypeCancel = new ButtonType("No, continue scanning", ButtonBar.ButtonData.CANCEL_CLOSE);
+
+                        alert.getButtonTypes().setAll(buttonTypeYes, buttonTypeCancel);
+                        Optional<ButtonType> result = alert.showAndWait();
+                        if (result.get() == buttonTypeYes) {
                             scanPerformer.cancelScan();
                             mainForm.scanBtn.setText("Start scan");
                             scanning = false;
-                        } else if (response == Dialog.Actions.CANCEL) {
+                        } else {
                             scanning = true;
                             scanPerformer.unpauseScan();
                             mainForm.scanBtn.setText("Cancel scan");
@@ -685,7 +740,10 @@ public class BidFx extends Application {
                                     updateResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     mainForm.scanBtn.setText("Start scan");
-                                    Dialogs.create().message("Scan completed").showInformation();
+                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                    alert.setHeaderText(null);
+                                    alert.setContentText("Scan completed");
+                                    alert.show();
                                 });
                                 return null;
                             },
@@ -761,35 +819,49 @@ public class BidFx extends Application {
 
             @Override
             public void handle(ActionEvent event) {
-                Dialogs.create().
-                        title("Please, confirm").
-                        message("All not *.bid files at the table will be renamed with \"<status>.bid\" postfix. Continue?").
-                        actions(new DefaultDialogAction("Continue", Dialog.ActionTrait.CLOSING) {
+                if (mainForm.treeTableView.getRoot() == null) {
+                    Alert alertOops = new Alert(Alert.AlertType.INFORMATION);
+                    alertOops.setTitle("Ooops!");
+                    alertOops.setHeaderText(null);
+                    alertOops.setContentText("Please, do scan before");
+                    alertOops.show();
+                    return;
+                }
 
-                            @Override
-                            public void handle(ActionEvent ae) {
-                                super.handle(ae);
-                                localDateTime = LocalDateTime.now();
-                                dateTimeForReportFileName = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss").format(localDateTime);
-                                dateTimeForReportText = DateTimeFormatter.ofPattern("dd MMM YYYY HH:mm:ss").format(localDateTime);
-                                root = mainForm.treeTableView.getRoot();
-                                totalReportName = root.getValue().getPath().toAbsolutePath().toString() + File.separator
-                                        + "~BID total report "
-                                        + dateTimeForReportFileName
-                                        + ".txt";
-                                renamedTotalFilesList = new ArrayList<>();
-                                notRenamedTotalFilesList = new ArrayList<>();
-                                iterateTree(root);
-                                makeTotalReportAndStore();
+                Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmAlert.setTitle("Please, confirm");
+                confirmAlert.setHeaderText(null);
+                confirmAlert.setContentText("All not *.bid files at the table will be renamed with \"<status>.bid\" postfix. Continue?");
+                ButtonType buttonTypeOne = new ButtonType("Yes");
+                ButtonType buttonTypeCancel = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
+                confirmAlert.getButtonTypes().setAll(buttonTypeOne, buttonTypeCancel);
 
-                                Platform.runLater(() ->
-                                        Dialogs.create().
-                                                message(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed").
-                                                title(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information").
-                                                showInformation());
-                            }
-                        }, new DefaultDialogAction("Cancel", Dialog.ActionTrait.CLOSING, Dialog.ActionTrait.DEFAULT)).
-                        showConfirm();
+                Optional<ButtonType> result = confirmAlert.showAndWait();
+                if (result.get() == buttonTypeOne) {
+                    localDateTime = LocalDateTime.now();
+                    dateTimeForReportFileName = DateTimeFormatter.ofPattern("YYYYMMdd_HHmmss").format(localDateTime);
+                    dateTimeForReportText = DateTimeFormatter.ofPattern("dd MMM YYYY HH:mm:ss").format(localDateTime);
+                    root = mainForm.treeTableView.getRoot();
+                    totalReportName = root.getValue().getPath().toAbsolutePath().toString() + File.separator
+                            + "~BID total report "
+                            + dateTimeForReportFileName
+                            + ".txt";
+                    renamedTotalFilesList = new ArrayList<>();
+                    notRenamedTotalFilesList = new ArrayList<>();
+                    iterateTree(root);
+                    makeTotalReportAndStore();
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setHeaderText(null);
+                        alert.setContentText(renamedTotalFilesList.size() > 0 ? renamedTotalFilesList.size() + " files was renamed" : "Files were not renamed");
+                        alert.setTitle(renamedTotalFilesList.size() > 0 ? "Renamed files list" : "Information");
+                        alert.show();
+                    });
+
+
+                } else {
+                    // ... user chose CANCEL or closed the dialog
+                }
 
             }
 

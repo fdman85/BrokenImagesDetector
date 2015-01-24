@@ -117,7 +117,7 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
                 readAsCommonImageResult.setDescription("ImageIO.read result is null");
                 readAsCommonImageResult.setStatus(Status.WARN);
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             readAsCommonImageResult.setDescription(ExceptionUtils.getMessage(e));
             readAsCommonImageResult.setDetails(ExceptionUtils.getStackTrace(e));
             readAsCommonImageResult.setStatus(Status.ERROR);
@@ -156,7 +156,7 @@ public class ByteAsImagesProcessAlgorithm implements IAlgorithm {
             final ImageReader reader = ImageIO.getImageReadersByFormatName(extension).next();
             reader.setInput(ImageIO.createImageInputStream(bais));
             reader.getImageMetadata(0);
-        } catch (IOException e) {
+        } catch (Exception e) {
             metaInfoResult.setDescription(ExceptionUtils.getMessage(e));
             metaInfoResult.setDetails(ExceptionUtils.getStackTrace(e));
             metaInfoResult.setStatus(Status.WARN);

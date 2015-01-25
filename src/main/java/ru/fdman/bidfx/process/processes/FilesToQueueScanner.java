@@ -25,6 +25,7 @@ public class FilesToQueueScanner extends PausableCallable {
     private final BlockingQueue<Map<File, byte[]>> queue;
     private final String scanFolder;
     private final Set<FileType> fileTypes;
+    private String currentScannedFile = "";
     private long filesTotal = 0;
 
 
@@ -51,6 +52,11 @@ public class FilesToQueueScanner extends PausableCallable {
         return true;
     }
 
+    @Override
+    public String getProgress() {
+        return currentScannedFile;
+    }
+
     private class MyFilesVisitor<T extends Path> extends SimpleFileVisitor<T> {
         private final Logger log = LoggerFactory
                 .getLogger(MyFilesVisitor.class);
@@ -70,7 +76,7 @@ public class FilesToQueueScanner extends PausableCallable {
                         filesTotal++;
                         queue.put(Collections.unmodifiableMap(Collections.singletonMap(file, bytes)));
                         //log.trace("End add file {} to queue", file.getName());
-
+                        currentScannedFile = file.getAbsolutePath();
                     } else {
                         //log.trace("File {} skipped", file.getName());
                     }

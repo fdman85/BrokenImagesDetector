@@ -101,6 +101,11 @@ public class ResultsToReportConverter extends PausableCallable {
 
     }
 
+    @Override
+    public String getProgress() {
+        return "q1 " + futureAlgorithmResults.size() +"q2 "+futureNotReadyAlgorithmResults.size();
+    }
+
     private class NotReadyDequeResultsToReportAppender implements Runnable {
         private void processDeque() {
             while (!Thread.interrupted()) {

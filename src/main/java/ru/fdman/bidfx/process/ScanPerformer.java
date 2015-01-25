@@ -6,6 +6,7 @@ import ru.fdman.bidfx.Constants;
 import ru.fdman.bidfx.FileType;
 import ru.fdman.bidfx.process.processes.*;
 import ru.fdman.bidfx.process.processes.driver.PausableProcessesDriver;
+import ru.fdman.bidfx.process.processes.driver.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.algorithm.IAlgorithm;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
@@ -29,7 +30,7 @@ public class ScanPerformer {
     private final PausableProcessesDriver pausableProcessesDriver;
 
 
-    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Function<Void, Void> onFinish, Function<Void, Void> onCancel) {
+    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Function<Void, Void> onFinish, Function<Void, Void> onCancel, Function<ProgressData, Void> refreshProgress) {
 
         BlockingQueue<Map<File, byte[]>> filesQueue = new ArrayBlockingQueue<>(Constants.INPUT_QUEUE_SIZE_NUM);
         LinkedBlockingDeque<Future<BytesProcessResult>> algorithmResultsDeque = new LinkedBlockingDeque<>(Constants.INPUT_QUEUE_SIZE_NUM);
@@ -53,7 +54,7 @@ public class ScanPerformer {
         pausableCallables.add(second);
         pausableCallables.add(third);
 
-        pausableProcessesDriver = new PausableProcessesDriver(pausableCallables, onFinish, onCancel);
+        pausableProcessesDriver = new PausableProcessesDriver(pausableCallables, onFinish, onCancel, refreshProgress);
     }
 
     public synchronized void performScan() {

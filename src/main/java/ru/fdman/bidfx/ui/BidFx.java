@@ -125,7 +125,6 @@ public class BidFx extends Application {
         private Button debugBtn = new Button("debug");
         private TreeTableView treeTableView = new TreeTableView();
         private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
-        //private Label statusBarLabel = new Label("TODO");
         private StatusBar statusBar = new StatusBar();
         //private ProgressBar progressBar = new ProgressBar(0);
 
@@ -142,12 +141,15 @@ public class BidFx extends Application {
             scanBtn.setMinWidth(90);
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
+
+
+
             treeTableView.setShowRoot(true);
         }
 
         private GridPane createMainGrid() {
             GridPane grid = new GridPane();
-            grid.setGridLinesVisible(true);
+            //grid.setGridLinesVisible(true);
             grid.setHgap(UIConstants.GAP_STD);
 
             grid.setVgap(UIConstants.GAP_STD);
@@ -165,7 +167,7 @@ public class BidFx extends Application {
             grid.add(getMoveRenameHbox(), 2, 2, 2, 1);
             Node statusBarHbox = getStatusBarHbox();
             grid.setHgrow(statusBarHbox, Priority.ALWAYS);
-            grid.setVgrow(statusBarHbox, Priority.ALWAYS);
+            grid.setVgrow(statusBarHbox, Priority.NEVER);
             grid.add(statusBarHbox, 0, 3, 4, 1);
             return grid;
         }
@@ -186,12 +188,12 @@ public class BidFx extends Application {
         }
 
         private Node getStatusBarHbox() {
+            statusBar.setText("111");
+            statusBar.setProgress(0d);
 
             HBox hbox = new HBox(10,
                     statusBar);
-            //hbox.setHgrow(progressBar, Priority.ALWAYS);
-            //TODO status bar
-//            hbox.setAlignment(Pos.CENTER_RIGHT);
+            hbox.setHgrow(statusBar, Priority.ALWAYS);
             return hbox;
         }
 
@@ -285,7 +287,6 @@ public class BidFx extends Application {
                             getTreeTableView().getSelectionModel().select(treeItem);
                             String message = item.replaceAll("\\r\\n", "").trim();
                             message = message.length() > 2000 ? message.substring(0, 1997) + "...\n\n... U can copy to clipboard the full log" : message;
-                            ///
                             Alert alert = new Alert(Alert.AlertType.INFORMATION);
                             alert.setTitle(title);
                             alert.setHeaderText(null);
@@ -293,7 +294,7 @@ public class BidFx extends Application {
 
 
 
-// Create expandable Exception.
+                            // Create expandable Exception.
                             Label label = new Label("The exception stacktrace was:");
 
                             TextArea textArea = new TextArea(message);
@@ -309,9 +310,6 @@ public class BidFx extends Application {
                             expContent.add(label, 0, 0);
                             expContent.add(textArea, 0, 1);
                             alert.getDialogPane().setExpandableContent(expContent);
-
-                            //TODO exception show
-
                             ButtonType buttonTypeCopy = new ButtonType("Copy details to clipboard");
                             ButtonType buttonTypeOk = new ButtonType("Ok", ButtonBar.ButtonData.CANCEL_CLOSE);
 
@@ -319,6 +317,10 @@ public class BidFx extends Application {
 
                             final Button buttonCopy = (Button) alert.getDialogPane().lookupButton(buttonTypeCopy);
                             buttonCopy.addEventFilter(ActionEvent.ACTION, (e) -> {
+                                final Clipboard clipboard = Clipboard.getSystemClipboard();
+                                final ClipboardContent content = new ClipboardContent();
+                                content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
+                                clipboard.setContent(content);
                                 buttonCopy.setText("Copied");
                                 e.consume();
                             });
@@ -336,15 +338,12 @@ public class BidFx extends Application {
 
                             Optional<ButtonType> result = alert.showAndWait();
                             if (result.get() == buttonTypeCopy) {
-                                final Clipboard clipboard = Clipboard.getSystemClipboard();
-                                final ClipboardContent content = new ClipboardContent();
-                                content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
-                                clipboard.setContent(content);
-                                //buttonTypeCopy.getButtonData().
-                            } else {
+//                                final Clipboard clipboard = Clipboard.getSystemClipboard();
+//                                final ClipboardContent content = new ClipboardContent();
+//                                content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
+//                                clipboard.setContent(content);
 
                             }
-                            ///
                         });
                         setGraphic(hBox);
                     } else {
@@ -756,6 +755,13 @@ public class BidFx extends Application {
                                     refreshTreeTableView();
                                 });
                                 return null;
+                            },
+                            aProgressData -> {
+                                Platform.runLater(() -> {
+                                    mainForm.statusBar.setProgress(aProgressData.getTotal());
+                                    mainForm.statusBar.setText(aProgressData.getInfo());
+                                });
+                                return null;
                             }
                     );
                     scanPerformer.performScan();
@@ -774,7 +780,6 @@ public class BidFx extends Application {
                 TreeItem<BytesProcessResult> tmpForViewRoot = resultsTreePostProcessor.shrinkTree(resultsTreePostProcessor.getRoot());
                 resultsTreePostProcessor.sortAndFilterTree(tmpForViewRoot,
                         bytesProcessResultTreeItem -> bytesProcessResultTreeItem.getChildren().sort((o1, o2) -> {
-                            //TODO sort correctly!!!
                             if (o1.isLeaf() && !o2.isLeaf()) {
                                 return 1;
                             } else if (!o1.isLeaf() && o2.isLeaf()) {

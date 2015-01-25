@@ -105,4 +105,9 @@ public class BrokenImagesDetector extends PausableCallable {
             log.error("processorExecService.awaitTermination {} {} {}", PROCESSING_WAIT_SECONDS, TimeUnit.SECONDS, ExceptionUtils.getStackTrace(e));
         }
     }
+
+    @Override
+    public String getProgress() {
+        return "q "+queue.size()+" pool:"+this.algorithmPool.getNumActive()+"|"+this.algorithmPool.getNumIdle(); //TODO
+    }
 }

@@ -59,9 +59,11 @@ public abstract class PausableCallable<T> implements Callable<T>, IPausable {
         //log.trace("{} paused flag was set", getName());
     }
 
-    protected String getName(){
+    public String getName(){
         return getClass().getSimpleName();
     }
+
+    public abstract String getProgress();
 
     public IFinishManager getFinishManager() {
         return finishManager;

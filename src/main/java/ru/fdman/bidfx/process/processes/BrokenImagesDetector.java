@@ -7,6 +7,7 @@ import org.apache.commons.pool2.PoolUtils;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.fdman.bidfx.process.processes.driver.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.FileBytesProcessor;
 import ru.fdman.bidfx.process.processes.processor.algorithm.AlgorithmPoolFactory;
 import ru.fdman.bidfx.process.processes.processor.algorithm.IAlgorithm;
@@ -107,7 +108,7 @@ public class BrokenImagesDetector extends PausableCallable {
     }
 
     @Override
-    public String getProgress() {
-        return "q "+queue.size()+" pool:"+this.algorithmPool.getNumActive()+"|"+this.algorithmPool.getNumIdle(); //TODO
+    public ProgressData getProgress() {
+        return new ProgressData((new Integer(queue.size()).doubleValue()), "q "+queue.size()+" pool:"+this.algorithmPool.getNumActive()+"|"+this.algorithmPool.getNumIdle()); //TODO
     }
 }

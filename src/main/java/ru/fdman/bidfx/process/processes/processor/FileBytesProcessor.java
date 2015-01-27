@@ -45,7 +45,6 @@ public class FileBytesProcessor implements Callable<BytesProcessResult> {
 
     @Override
     public BytesProcessResult call() {
-        //log.trace("called FileBytesProcessor {}. file {}", id, file.getName());
         IAlgorithm algorithm = null;
         BytesProcessResult processResult = null;
         try {

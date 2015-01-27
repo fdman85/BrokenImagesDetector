@@ -20,6 +20,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
@@ -30,19 +31,23 @@ public class ScanPerformer {
     private final PausableProcessesDriver pausableProcessesDriver;
 
 
-    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Function<Void, Void> onFinish, Function<Void, Void> onCancel, Function<ProgressData, Void> refreshProgress) {
+    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Function<Void, Void> onFinish, Function<Void, Void> onCancel, BiConsumer<ProgressData, ProgressData> refreshProgress) {
 
         BlockingQueue<Map<File, byte[]>> filesQueue = new ArrayBlockingQueue<>(Constants.INPUT_QUEUE_SIZE_NUM);
         LinkedBlockingDeque<Future<BytesProcessResult>> algorithmResultsDeque = new LinkedBlockingDeque<>(Constants.INPUT_QUEUE_SIZE_NUM);
         List<PausableCallable<?>> pausableCallables = new LinkedList<>();
+        PausableCallable<?> zero = new TotalFilesCounter(folderPath, fileTypes);
         PausableCallable<?> first = new FilesToQueueScanner(filesQueue, folderPath, fileTypes);
         PausableCallable<?> second = new BrokenImagesDetector(Constants.CPU_CORES_NUM, filesQueue, algorithmResultsDeque, algorithmClass);
         PausableCallable<?> third = new ResultsToReportConverter(algorithmResultsDeque, report);
 
+        IFinishManager zeroManager = new CommonFinishManager("TotalFilesCounter");
         IFinishManager firstManager = new CommonFinishManager("FilesToQueueScanner");
         IFinishManager secondManager = new CommonFinishManager("BrokenImagesDetector");
         IFinishManager thirdManager = new CommonFinishManager("ResultsToReportConverter");
 
+        zero.setFinishManager(zeroManager);
+        zero.setNextFinishManager(firstManager);
         first.setFinishManager(firstManager);
         first.setNextFinishManager(secondManager);
         second.setFinishManager(secondManager);
@@ -50,6 +55,7 @@ public class ScanPerformer {
         third.setFinishManager(thirdManager);
         third.setNextFinishManager(null);
 
+        pausableCallables.add(zero);
         pausableCallables.add(first);
         pausableCallables.add(second);
         pausableCallables.add(third);

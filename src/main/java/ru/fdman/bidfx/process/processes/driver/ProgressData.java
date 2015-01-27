@@ -4,15 +4,21 @@ package ru.fdman.bidfx.process.processes.driver;
  * Created by fdman on 25.01.2015.
  */
 public class ProgressData {
-    private Double total;
+    private double interim;
+    private double total;
 
     private String info;
 
-    public Double getTotal() {
+    public ProgressData(Double total, String info) {
+        this.total = total;
+        this.info = info;
+    }
+
+    public double getTotal() {
         return total;
     }
 
-    public void setTotal(Double total) {
+    public void setTotal(double total) {
         this.total = total;
     }
 
@@ -21,11 +27,6 @@ public class ProgressData {
     }
 
     public void setInfo(String info) {
-        this.info = info;
-    }
-
-    public ProgressData(Double total, String info) {
-        this.total = total;
         this.info = info;
     }
 }

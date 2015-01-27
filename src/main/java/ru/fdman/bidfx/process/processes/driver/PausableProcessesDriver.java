@@ -8,10 +8,10 @@ import ru.fdman.bidfx.process.processes.PausableCallable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 /**
@@ -25,12 +25,12 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
     private final ExecutorService resultGetterExecutorService;
     private final Function<Void, Void> onFinish;
     private final Function<Void, Void> onCancel;
-    private final Function<ProgressData, Void> refreshProgress;
+    private final BiConsumer<ProgressData, ProgressData>  refreshProgress;
     private final Logger log = LoggerFactory
             .getLogger(PausableProcessesDriver.class);
     private volatile boolean scanCancelled = false;
 
-    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Function<Void, Void> onFinish, Function<Void, Void> onCancel, Function<ProgressData, Void> refreshProgress) {
+    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Function<Void, Void> onFinish, Function<Void, Void> onCancel, BiConsumer<ProgressData, ProgressData> refreshProgress) {
         resultGetterExecutorService = Executors.newFixedThreadPool(pausableCallables.size(), new BasicThreadFactory.Builder().namingPattern("resultGetterExecutorService - %d").build());
         callablesFutures = new ArrayList<>(pausableCallables.size());
         this.callables=pausableCallables;
@@ -66,11 +66,16 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
             while (isAnyProcessInProgress()) {
                 try {
                     StringBuilder sb = new StringBuilder();
+                    Double d = 0d;
                     for (PausableCallable<?> callable : this.callables) {
-                        sb.append(callable.getName()).append(": ").append(callable.getProgress()).append(" ");
+                        sb.append(callable.getName()).append(": ").append(callable.getProgress().getInfo()).append(" ");
+                        d+=callable.getProgress().getTotal();
+
+
+                        callable.getProgress();
                     }
 
-                    refreshProgress.apply(new ProgressData(new Random().nextDouble(), sb.toString()));
+                    refreshProgress.accept(new ProgressData(d, sb.toString()), null);// apply(new ProgressData(d, sb.toString()));
                     Thread.sleep(40);
                 } catch (InterruptedException e) {
                     log.error(ExceptionUtils.getStackTrace(e));

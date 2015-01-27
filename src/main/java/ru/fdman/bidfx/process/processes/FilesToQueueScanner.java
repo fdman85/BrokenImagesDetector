@@ -5,6 +5,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.FileType;
+import ru.fdman.bidfx.process.processes.driver.ProgressData;
 
 import java.io.File;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * User: fdman
@@ -26,7 +28,7 @@ public class FilesToQueueScanner extends PausableCallable {
     private final String scanFolder;
     private final Set<FileType> fileTypes;
     private String currentScannedFile = "";
-    private long filesTotal = 0;
+    private AtomicLong filesTotal = new AtomicLong(0);
 
 
     public FilesToQueueScanner(BlockingQueue<Map<File, byte[]>> queue, String scanFolder, Set<ru.fdman.bidfx.FileType> fileTypes) {
@@ -40,6 +42,7 @@ public class FilesToQueueScanner extends PausableCallable {
     public Object call() {
         log.trace("FilesToQueueScanner STARTED");
         long start = Calendar.getInstance().getTimeInMillis();
+        filesTotal.set(0L);
         try {
             FileVisitor<Path> myFilesVisitor = new MyFilesVisitor<>();
             Files.walkFileTree(new File(scanFolder).toPath(), myFilesVisitor);
@@ -53,13 +56,14 @@ public class FilesToQueueScanner extends PausableCallable {
     }
 
     @Override
-    public String getProgress() {
-        return currentScannedFile;
+    public ProgressData getProgress() {
+        return new ProgressData(-filesTotal.doubleValue(), currentScannedFile);
     }
 
     private class MyFilesVisitor<T extends Path> extends SimpleFileVisitor<T> {
         private final Logger log = LoggerFactory
                 .getLogger(MyFilesVisitor.class);
+
 
         @Override
         public FileVisitResult visitFile(T path, BasicFileAttributes attrs)
@@ -73,7 +77,7 @@ public class FilesToQueueScanner extends PausableCallable {
                             && isFileExtensionMatchFilter(FilenameUtils.getExtension(file.getName().toLowerCase()))) {
                         //log.trace("Begin add file {} to queue", file.getName());
                         byte[] bytes = Files.readAllBytes(path);
-                        filesTotal++;
+                        filesTotal.incrementAndGet();
                         queue.put(Collections.unmodifiableMap(Collections.singletonMap(file, bytes)));
                         //log.trace("End add file {} to queue", file.getName());
                         currentScannedFile = file.getAbsolutePath();

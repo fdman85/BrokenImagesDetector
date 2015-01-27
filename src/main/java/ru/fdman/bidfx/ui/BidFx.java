@@ -39,6 +39,7 @@ import javafx.util.StringConverter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.math3.util.Precision;
 import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import ru.fdman.bidfx.Status;
 import ru.fdman.bidfx.process.BasicReportImpl;
 import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.ScanPerformer;
+import ru.fdman.bidfx.process.processes.driver.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.algorithm.ByteAsImagesProcessAlgorithm;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
@@ -62,6 +64,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -141,7 +144,6 @@ public class BidFx extends Application {
             scanBtn.setMinWidth(90);
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
-
 
 
             treeTableView.setShowRoot(true);
@@ -291,7 +293,6 @@ public class BidFx extends Application {
                             alert.setTitle(title);
                             alert.setHeaderText(null);
                             alert.setContentText(treeItem.getValue().getPath().toString());
-
 
 
                             // Create expandable Exception.
@@ -698,6 +699,18 @@ public class BidFx extends Application {
                     .getLogger(ScanBtnEventHandler.class);
             private ScanPerformer scanPerformer;
             private volatile boolean scanning = false;
+            //private long totalFilesInDirectory = -1;
+
+            /*private long countScanDirectoryFiles() {
+                final AtomicLong totalFiles = new AtomicLong(0);
+                try {
+                    Files.walkFileTree(new File(mainForm.folderPath.getText()).toPath(), );
+                } catch (IOException e) {
+                    log.error("{}", ExceptionUtils.getStackTrace(e));
+                    totalFiles.set(-1);
+                }
+                return totalFiles.get();
+            } */
 
             @Override
             public synchronized void handle(ActionEvent event) {
@@ -725,9 +738,11 @@ public class BidFx extends Application {
                         }
                     });
                 } else {
+                    //totalFilesInDirectory = countScanDirectoryFiles();
                     scanning = true;
                     Report report = new BasicReportImpl();
                     Platform.runLater(() -> mainForm.scanBtn.setText("Cancel scan"));
+
                     scanPerformer = new ScanPerformer(mainForm.folderPath.getText(),
                             getSelectedFileTypes(),
                             ByteAsImagesProcessAlgorithm.class,
@@ -756,12 +771,23 @@ public class BidFx extends Application {
                                 });
                                 return null;
                             },
-                            aProgressData -> {
-                                Platform.runLater(() -> {
-                                    mainForm.statusBar.setProgress(aProgressData.getTotal());
-                                    mainForm.statusBar.setText(aProgressData.getInfo());
-                                });
-                                return null;
+                            new BiConsumer<ProgressData, ProgressData>() {
+                                //tricky hack with progress calculations
+                                private double maxProgressValue = -1d;
+                                @Override
+                                public void accept(ProgressData aProgressData, ProgressData aVoid) {
+                                    Platform.runLater(() -> {
+                                        maxProgressValue = Math.max(aProgressData.getTotal(), maxProgressValue);
+                                        double progress = Precision.round(((maxProgressValue - aProgressData.getTotal()) / maxProgressValue), 2);
+                                        System.out.println("max: " + maxProgressValue + " progress: " + progress + " getTotal: " + aProgressData.getTotal());
+                                        if (!Double.isNaN(progress) && progress > 0) {
+                                            mainForm.statusBar.setProgress(progress+0.05);
+                                        } else {
+                                            mainForm.statusBar.setProgress(-1);
+                                        }
+                                        mainForm.statusBar.setText(aProgressData.getInfo());
+                                    });
+                                }
                             }
                     );
                     scanPerformer.performScan();

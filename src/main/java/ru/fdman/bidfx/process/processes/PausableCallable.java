@@ -2,6 +2,7 @@ package ru.fdman.bidfx.process.processes;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.fdman.bidfx.process.processes.driver.ProgressData;
 
 import java.util.concurrent.Callable;
 
@@ -63,7 +64,7 @@ public abstract class PausableCallable<T> implements Callable<T>, IPausable {
         return getClass().getSimpleName();
     }
 
-    public abstract String getProgress();
+    public abstract ProgressData getProgress();
 
     public IFinishManager getFinishManager() {
         return finishManager;

@@ -6,7 +6,6 @@ import ru.fdman.bidfx.Constants;
 import ru.fdman.bidfx.FileType;
 import ru.fdman.bidfx.process.processes.*;
 import ru.fdman.bidfx.process.processes.driver.PausableProcessesDriver;
-import ru.fdman.bidfx.process.processes.driver.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.algorithm.IAlgorithm;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 

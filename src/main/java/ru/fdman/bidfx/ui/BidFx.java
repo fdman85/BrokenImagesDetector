@@ -14,8 +14,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventDispatchChain;
 import javafx.event.EventDispatcher;
 import javafx.event.EventHandler;
+import javafx.geometry.HPos;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -28,10 +30,7 @@ import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
@@ -40,15 +39,14 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.math3.util.Precision;
-import org.controlsfx.control.StatusBar;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.FileType;
 import ru.fdman.bidfx.Status;
 import ru.fdman.bidfx.process.BasicReportImpl;
+import ru.fdman.bidfx.process.ProgressData;
 import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.ScanPerformer;
-import ru.fdman.bidfx.process.processes.driver.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.algorithm.ByteAsImagesProcessAlgorithm;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
@@ -128,7 +126,10 @@ public class BidFx extends Application {
         private Button debugBtn = new Button("debug");
         private TreeTableView treeTableView = new TreeTableView();
         private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
-        private StatusBar statusBar = new StatusBar();
+        //private StatusBar statusBar = new StatusBar();
+        private Label statusBarText = new Label("Select folder and press scan button");
+        private ProgressBar progressBar = new ProgressBar(Double.MIN_NORMAL);
+        private ProgressIndicator progressIndicator = new ProgressIndicator(Double.MIN_NORMAL);
         //private ProgressBar progressBar = new ProgressBar(0);
 
 
@@ -144,34 +145,42 @@ public class BidFx extends Application {
             scanBtn.setMinWidth(90);
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
-
-
             treeTableView.setShowRoot(true);
+            progressIndicator.progressProperty().bind(progressBar.progressProperty());
+
+            //statusBar.progressProperty()
         }
 
         private GridPane createMainGrid() {
-            GridPane grid = new GridPane();
-            //grid.setGridLinesVisible(true);
-            grid.setHgap(UIConstants.GAP_STD);
-
-            grid.setVgap(UIConstants.GAP_STD);
-            grid.setPadding(UIConstants.INSETS_STD);
-            grid.setAlignment(Pos.CENTER);
+            GridPane contentGrid = new GridPane();
+            //contentGrid.setGridLinesVisible(true);
+            setupStandardFormGrid(contentGrid, UIConstants.GAP_STD, UIConstants.INSETS_STD);
 
             Node extensionsHbox = getExtensionsHbox();
-            grid.setHgrow(extensionsHbox, Priority.ALWAYS);
-            grid.add(extensionsHbox, 0, 0);
-            grid.add(getSelectPathHbox(), 3, 0);
             Node treeTableViewVbox = getTreeTableViewVbox();
-            grid.setVgrow(treeTableViewVbox, Priority.ALWAYS);
-            grid.add(treeTableViewVbox, 0, 1, 4, 1);
-            grid.add(getFilterHbox(), 0, 2, 1, 1);
-            grid.add(getMoveRenameHbox(), 2, 2, 2, 1);
-            Node statusBarHbox = getStatusBarHbox();
-            grid.setHgrow(statusBarHbox, Priority.ALWAYS);
-            grid.setVgrow(statusBarHbox, Priority.NEVER);
-            grid.add(statusBarHbox, 0, 3, 4, 1);
-            return grid;
+            Node statusBarGrid = getStatusBarGrid();
+
+            contentGrid.add(extensionsHbox, 0, 0);
+            contentGrid.add(getSelectPathHbox(), 3, 0);
+            contentGrid.add(treeTableViewVbox, 0, 2, 4, 1);
+            contentGrid.add(getFilterHbox(), 0, 1, 1, 1);
+            contentGrid.add(getMoveRenameHbox(), 2, 1, 2, 1);
+            contentGrid.add(statusBarGrid, 0, 3, 4, 1);
+
+
+
+            contentGrid.setHgrow(extensionsHbox, Priority.ALWAYS);
+            contentGrid.setVgrow(treeTableViewVbox, Priority.ALWAYS);
+            contentGrid.setHgrow(statusBarGrid, Priority.ALWAYS);
+            contentGrid.setVgrow(statusBarGrid, Priority.NEVER);
+            return contentGrid;
+        }
+
+        private void setupStandardFormGrid(GridPane contentGrid, double gap, Insets insets) {
+            contentGrid.setHgap(gap);
+            contentGrid.setVgap(gap);
+            contentGrid.setPadding(UIConstants.INSETS_STD);
+            contentGrid.setAlignment(Pos.CENTER);
         }
 
         private Node getTreeTableViewVbox() {
@@ -189,14 +198,30 @@ public class BidFx extends Application {
             return hbox;
         }
 
-        private Node getStatusBarHbox() {
-            statusBar.setText("111");
-            statusBar.setProgress(0d);
+        private Node getStatusBarGrid() {
+            GridPane statusBarGrid = new GridPane();
+            setupStandardFormGrid(statusBarGrid, 16, new Insets(0,0,0,0));
+            statusBarGrid.setAlignment(Pos.TOP_LEFT);
+            statusBarGrid.add(statusBarText, 0, 0, 1, 1);
+            statusBarGrid.add(progressBar, 0, 1, 1, 1);
+            statusBarGrid.add(progressIndicator, 1, 0, 1, 2);
 
-            HBox hbox = new HBox(10,
-                    statusBar);
-            hbox.setHgrow(statusBar, Priority.ALWAYS);
-            return hbox;
+            //progressBar.
+
+            statusBarGrid.setHgrow(progressIndicator, Priority.NEVER);
+            statusBarGrid.setHgrow(progressBar, Priority.ALWAYS);
+            statusBarGrid.setHgrow(statusBarText, Priority.ALWAYS);
+
+            statusBarGrid.getColumnConstraints().addAll(
+                    new ColumnConstraints(-1, -1,-1,Priority.ALWAYS,HPos.LEFT, false),
+                    new ColumnConstraints(-1, -1,-1,Priority.NEVER,HPos.RIGHT, true)
+            )        ;
+
+            statusBarGrid.getRowConstraints().addAll(
+                      new RowConstraints(-1,-1,-1,Priority.NEVER, VPos.CENTER, false)
+            );
+
+            return statusBarGrid;
         }
 
         private Node getExtensionsHbox() {
@@ -757,6 +782,9 @@ public class BidFx extends Application {
                                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                     alert.setHeaderText(null);
                                     alert.setContentText("Scan completed");
+                                    mainForm.progressBar.setProgress(1);
+                                    //mainForm.statusBarProgressValue.setText("100%");
+
                                     alert.show();
                                 });
                                 return null;
@@ -768,33 +796,41 @@ public class BidFx extends Application {
                                     mainForm.scanBtn.setText("Scan");
                                     updateResultTreePostProcessor(report);
                                     refreshTreeTableView();
+                                    if (mainForm.progressBar.getProgress() < 0) {
+                                        mainForm.progressBar.setProgress(Double.MIN_NORMAL);
+                                        //mainForm.statusBarProgressValue.setText("0%");
+                                    }
                                 });
                                 return null;
                             },
                             new BiConsumer<ProgressData, ProgressData>() {
                                 //tricky hack with progress calculations
                                 private double maxProgressValue = -1d;
+
                                 @Override
                                 public void accept(ProgressData aProgressData, ProgressData aVoid) {
                                     Platform.runLater(() -> {
                                         maxProgressValue = Math.max(aProgressData.getTotal(), maxProgressValue);
                                         double progress = Precision.round(((maxProgressValue - aProgressData.getTotal()) / maxProgressValue), 2);
-                                        System.out.println("max: " + maxProgressValue + " progress: " + progress + " getTotal: " + aProgressData.getTotal());
+                                        //System.out.println("max: " + maxProgressValue + " progress: " + progress + " getTotal: " + aProgressData.getTotal());
                                         if (!Double.isNaN(progress) && progress > 0) {
-                                            mainForm.statusBar.setProgress(progress+0.05);
+                                            mainForm.progressBar.setProgress(progress + 0.05);
+                                            //mainForm.statusBarProgressValue.setText(Precision.round(progress * 100., 0) + "%");
                                         } else {
-                                            mainForm.statusBar.setProgress(-1);
+                                            mainForm.progressBar.setProgress(-1);
                                         }
-                                        mainForm.statusBar.setText(aProgressData.getInfo());
+                                        mainForm.statusBarText.setText(aProgressData.getInfo());
                                     });
                                 }
                             }
                     );
                     scanPerformer.performScan();
+                    mainForm.progressBar.setProgress(Double.MIN_NORMAL);
+                    //mainForm.statusBarProgressValue.setText("0%");
                 }
             }
 
-            private void updateResultTreePostProcessor(Report report) {
+            private synchronized void updateResultTreePostProcessor(Report report) {
                 log.info("Total report lines (num of scanned files) is {}", report.getLines().size());
                 resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(report.getLines());
 

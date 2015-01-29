@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.Constants;
 import ru.fdman.bidfx.process.Report;
-import ru.fdman.bidfx.process.processes.driver.ProgressData;
+import ru.fdman.bidfx.process.ProgressData;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
 import java.util.Calendar;
@@ -106,7 +106,7 @@ public class ResultsToReportConverter extends PausableCallable {
     public ProgressData getProgress() {
         return new ProgressData(
                 (new Integer(futureAlgorithmResults.size()+futureNotReadyAlgorithmResults.size()).doubleValue()),
-                "q1 " + futureAlgorithmResults.size() +"q2 "+futureNotReadyAlgorithmResults.size()); //TODO
+                /*"q1 " + futureAlgorithmResults.size() +"q2 "+futureNotReadyAlgorithmResults.size()*/"");
     }
 
     private class NotReadyDequeResultsToReportAppender implements Runnable {
@@ -114,7 +114,6 @@ public class ResultsToReportConverter extends PausableCallable {
             while (!Thread.interrupted()) {
                 try {
                     if (futureNotReadyAlgorithmResults.peekFirst() != null) {
-                        //log.trace("futureNotReadyAlgorithmResults proceeded... ");
                         Future<BytesProcessResult> bytesProcessResultFuture = futureNotReadyAlgorithmResults.takeFirst();
                         if (bytesProcessResultFuture != null) {
                             if (bytesProcessResultFuture.isDone() || bytesProcessResultFuture.isCancelled()) {

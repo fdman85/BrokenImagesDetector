@@ -5,7 +5,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.FileType;
-import ru.fdman.bidfx.process.processes.driver.ProgressData;
+import ru.fdman.bidfx.process.ProgressData;
 
 import java.io.File;
 import java.io.IOException;

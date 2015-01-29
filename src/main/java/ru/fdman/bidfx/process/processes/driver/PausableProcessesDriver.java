@@ -4,6 +4,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.fdman.bidfx.process.ProgressData;
 import ru.fdman.bidfx.process.processes.PausableCallable;
 
 import java.util.ArrayList;
@@ -68,7 +69,8 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
                     StringBuilder sb = new StringBuilder();
                     Double d = 0d;
                     for (PausableCallable<?> callable : this.callables) {
-                        sb.append(callable.getName()).append(": ").append(callable.getProgress().getInfo()).append(" ");
+                        //sb.append(callable.getName()).append(": ").append(callable.getProgress().getInfo()).append(" ");
+                        sb.append(callable.getProgress().getInfo()).append(" ");
                         d+=callable.getProgress().getTotal();
 
 

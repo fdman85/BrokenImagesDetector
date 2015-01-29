@@ -76,7 +76,7 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
         return result;
     }
 
-    public ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult> generateTree(List<T> bytesProcessResults) {
+    public synchronized ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult> generateTree(List<T> bytesProcessResults) {
         for (BytesProcessResult bytesProcessResult : bytesProcessResults) {
             String fullPath = bytesProcessResult.getPath().toString();
             List<String> paths = Arrays.asList(fullPath.split(Pattern.quote(File.separator)));

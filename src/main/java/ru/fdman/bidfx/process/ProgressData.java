@@ -1,4 +1,4 @@
-package ru.fdman.bidfx.process.processes.driver;
+package ru.fdman.bidfx.process;
 
 /**
  * Created by fdman on 25.01.2015.

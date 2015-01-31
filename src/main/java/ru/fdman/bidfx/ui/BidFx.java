@@ -140,6 +140,8 @@ public class BidFx extends Application {
 
         private void init() {
             moveRenameBtn.setDisable(true);
+            moveRenameBtn.setVisible(false);
+            moveRenameInfoLabel.setVisible(false);
             statusFilterComboBox.setValue(Status.OK);
             clauseFilterComboBox.setValue(Clause.EQUAL_OR_STRONGER);
             scanBtn.setMinWidth(90);
@@ -155,7 +157,7 @@ public class BidFx extends Application {
                         int percent = new Double(newValue.doubleValue() * 100.0).intValue();
                         if (newValue.doubleValue() <= Double.MIN_NORMAL) {
                             maxProgressValue = 0;
-                        }          else {
+                        } else {
                             maxProgressValue = Math.max(maxProgressValue, percent);
                         }
 
@@ -447,8 +449,6 @@ public class BidFx extends Application {
 
         private void setupMoveRenameBtnBehaviour() {
             mainForm.moveRenameBtn.setOnAction(new MoveRenameBtnEventHandler());
-
-
         }
 
         private void setupMainTreeTableBehaviour() {
@@ -741,7 +741,7 @@ public class BidFx extends Application {
             private volatile boolean scanning = false;
 
             @Override
-            public synchronized void handle(ActionEvent event) {
+            public void handle(ActionEvent event) {
                 if (scanning) {
                     scanPerformer.pauseScan();
                     Platform.runLater(() -> {
@@ -757,19 +757,24 @@ public class BidFx extends Application {
                         Optional<ButtonType> result = alert.showAndWait();
                         if (result.get() == buttonTypeYes) {
                             scanPerformer.cancelScan();
-                            mainForm.scanBtn.setText("Start scan");
-
+                            //mainForm.scanBtn.setText("Start scan");
+                            setUIDisabled(false);
                             scanning = false;
                         } else {
+
                             scanPerformer.unpauseScan();
                             scanning = true;
-                            mainForm.scanBtn.setText("Cancel scan");
                         }
                     });
                 } else {
+
                     scanning = true;
                     Report report = new BasicReportImpl();
-                    Platform.runLater(() -> mainForm.scanBtn.setText("Cancel scan"));
+                    Platform.runLater(() -> {
+                                //mainForm.scanBtn.setText("Cancel scan");
+                                setUIDisabled(true);
+                            }
+                    );
 
                     scanPerformer = new ScanPerformer(mainForm.folderPath.getText(),
                             getSelectedFileTypes(),
@@ -779,9 +784,10 @@ public class BidFx extends Application {
                                 log.info("Scan finished");
                                 scanning = false;
                                 Platform.runLater(() -> {
+                                    log.debug("finished");
                                     updateResultTreePostProcessor(report);
                                     refreshTreeTableView();
-                                    mainForm.scanBtn.setText("Start scan");
+                                    setUIDisabled(false);
                                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                     alert.setHeaderText(null);
                                     alert.setContentText("Scan completed");
@@ -795,7 +801,8 @@ public class BidFx extends Application {
                                 log.info("Scan cancelled");
                                 scanning = false;
                                 Platform.runLater(() -> {
-                                    mainForm.scanBtn.setText("Scan");
+                                    setUIDisabled(false);
+                                    log.debug("cancelled");
                                     updateResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     if (mainForm.progressBar.getProgress() < 0) {
@@ -828,9 +835,27 @@ public class BidFx extends Application {
                 }
             }
 
-            private synchronized void updateResultTreePostProcessor(Report report) {
+            private void setUIDisabled(boolean disable) {
+                if (disable) {
+                    mainForm.scanBtn.setText("Cancel scan");
+                } else {
+                    mainForm.scanBtn.setText("Start scan");
+                }
+                mainForm.folderPath.setDisable(disable);
+                mainForm.selectPathBtn.setDisable(disable);
+                mainForm.gifCheckBox.setDisable(disable);
+                mainForm.bidCheckBox.setDisable(disable);
+                mainForm.jpgCheckBox.setDisable(disable);
+                mainForm.nefCheckBox.setDisable(disable);
+                mainForm.clauseFilterComboBox.setDisable(disable);
+                mainForm.statusFilterComboBox.setDisable(disable);
+                mainForm.moveRenameInfoLabel.setVisible(!disable);
+                mainForm.moveRenameBtn.setVisible(!disable);
+            }
+
+            private void updateResultTreePostProcessor(Report report) {
                 log.info("Total report lines (num of scanned files) is {}", report.getLines().size());
-                resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(Collections.synchronizedList(report.getLines()));
+                resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(report.getLines());
 
             }
         }

@@ -13,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Created by fdman on 07.07.2014.
@@ -24,14 +23,14 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
     private final List<PausableCallable<?>> callables;
     private final List<Future> callablesFutures;
     private final ExecutorService resultGetterExecutorService;
-    private final Function<Void, Void> onFinish;
-    private final Function<Void, Void> onCancel;
+    private final Consumer<Void>  onFinish;
+    private final Consumer<Void>  onCancel;
     private final Consumer<ProgressData>  refreshProgress;
     private final Logger log = LoggerFactory
             .getLogger(PausableProcessesDriver.class);
     private volatile boolean scanCancelled = false;
 
-    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Function<Void, Void> onFinish, Function<Void, Void> onCancel, Consumer<ProgressData> refreshProgress) {
+    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Consumer<Void>  onFinish, Consumer<Void>  onCancel, Consumer<ProgressData> refreshProgress) {
         resultGetterExecutorService = Executors.newFixedThreadPool(pausableCallables.size(), new BasicThreadFactory.Builder().namingPattern("resultGetterExecutorService - %d").build());
         callablesFutures = new ArrayList<>(pausableCallables.size());
         this.callables=pausableCallables;
@@ -72,23 +71,20 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
                         //sb.append(callable.getName()).append(": ").append(callable.getProgress().getInfo()).append(" ");
                         sb.append(callable.getProgress().getInfo()).append(" ");
                         d+=callable.getProgress().getTotal();
-
-
                         callable.getProgress();
                     }
-
                     refreshProgress.accept(new ProgressData(d, sb.toString()));// apply(new ProgressData(d, sb.toString()));
                     Thread.sleep(40);
                 } catch (InterruptedException e) {
                     log.error(ExceptionUtils.getStackTrace(e));
                     processesDriverState = ProcessDriverState.STOPPED;
                     scanCancelled = true;
-                    onCancel.apply(null);
+                    onCancel.accept(null);
                     return;
                 }
             }
             if (!scanCancelled){
-                onFinish.apply(null);
+                onFinish.accept(null);
             }
             processesDriverState = ProcessDriverState.STOPPED;
             resultGetterExecutorService.shutdown();
@@ -149,7 +145,7 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
         resultGetterExecutorService.shutdownNow();
         processesDriverState = ProcessDriverState.STOPPED;
         scanCancelled = true;
-        onCancel.apply(null);
+        onCancel.accept(null);
     }
 
     @Override

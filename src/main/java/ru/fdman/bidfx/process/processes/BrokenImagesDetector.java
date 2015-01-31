@@ -25,7 +25,7 @@ import java.util.concurrent.*;
  * Created by fdman on 07.07.2014.
  */
 public class BrokenImagesDetector extends PausableCallable {
-    private static final long PROCESSING_WAIT_SECONDS = 10;
+    private static final long PROCESSING_WAIT_SECONDS = 2;
     private final Logger log = LoggerFactory
             .getLogger(BrokenImagesDetector.class);
 
@@ -103,7 +103,8 @@ public class BrokenImagesDetector extends PausableCallable {
         try {
             processorExecService.awaitTermination(PROCESSING_WAIT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            log.error("processorExecService.awaitTermination {} {} {}", PROCESSING_WAIT_SECONDS, TimeUnit.SECONDS, ExceptionUtils.getStackTrace(e));
+            log.warn("processorExecService interrupted {} {} {}", PROCESSING_WAIT_SECONDS, TimeUnit.SECONDS, ExceptionUtils.getStackTrace(e));
+            processorExecService.shutdownNow();
         }
     }
 

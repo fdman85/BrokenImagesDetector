@@ -43,6 +43,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.math3.util.Precision;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 import ru.fdman.bidfx.FileType;
 import ru.fdman.bidfx.Status;
 import ru.fdman.bidfx.process.BasicReportImpl;
@@ -81,6 +82,10 @@ public class BidFx extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+
+        SLF4JBridgeHandler.removeHandlersForRootLogger();  // (since SLF4J 1.6.5)
+        SLF4JBridgeHandler.install();
+
         MainForm form = new MainForm(stage);
 
         form.init();
@@ -156,6 +161,8 @@ public class BidFx extends Application {
                     if (newValue.doubleValue() >= 0) {
                         int percent = new Double(newValue.doubleValue() * 100.0).intValue();
                         if (newValue.doubleValue() <= Double.MIN_NORMAL) {
+                            maxProgressValue = 0;
+                        } else if (newValue.doubleValue() >= 1) {
                             maxProgressValue = 0;
                         } else {
                             maxProgressValue = Math.max(maxProgressValue, percent);
@@ -780,12 +787,11 @@ public class BidFx extends Application {
                             getSelectedFileTypes(),
                             ByteAsImagesProcessAlgorithm.class,
                             report,
-                            aVoid -> {
+                            (aVoid) -> {
                                 log.info("Scan finished");
                                 scanning = false;
                                 Platform.runLater(() -> {
-                                    log.debug("finished");
-                                    updateResultTreePostProcessor(report);
+                                    setNewResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     setUIDisabled(false);
                                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -795,21 +801,19 @@ public class BidFx extends Application {
 
                                     alert.show();
                                 });
-                                return null;
                             },
-                            aVoid -> {
+                            (aVoid) -> {
                                 log.info("Scan cancelled");
                                 scanning = false;
+
                                 Platform.runLater(() -> {
                                     setUIDisabled(false);
-                                    log.debug("cancelled");
-                                    updateResultTreePostProcessor(report);
+                                    setNewResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     if (mainForm.progressBar.getProgress() < 0) {
                                         mainForm.progressBar.setProgress(Double.MIN_NORMAL);
                                     }
                                 });
-                                return null;
                             },
                             new Consumer<ProgressData>() {
                                 //tricky hack with progress calculations
@@ -853,9 +857,13 @@ public class BidFx extends Application {
                 mainForm.moveRenameBtn.setVisible(!disable);
             }
 
-            private void updateResultTreePostProcessor(Report report) {
-                log.info("Total report lines (num of scanned files) is {}", report.getLines().size());
-                resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(report.getLines());
+
+            private void setNewResultTreePostProcessor(Report report) {
+                log.info("Files scanned: {}", report.getLines().size());
+                ResultsTreeBuilder resultsTreeBuilder = new ResultsTreeBuilder(mainForm.folderPath.getText());
+                TreeItem treeItem = resultsTreeBuilder.generateTree(report.getLines());
+                resultsTreePostProcessor =
+                        new ResultsTreePostProcessor<>(treeItem);
 
             }
         }

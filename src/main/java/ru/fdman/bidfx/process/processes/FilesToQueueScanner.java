@@ -86,7 +86,7 @@ public class FilesToQueueScanner extends PausableCallable {
                     }
                     return super.visitFile(path, attrs);
                 } catch (InterruptedException | ClosedByInterruptException e) {
-                    log.error("Scan thread was interrupted. End at file {} (skipped)", file.getName());
+                    log.warn("Scan thread was interrupted. End at file {} (skipped)", file.getName());
                     return FileVisitResult.TERMINATE;
                 }
             }

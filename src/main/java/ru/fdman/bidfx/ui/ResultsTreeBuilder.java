@@ -29,6 +29,7 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
         this.rootPath = StringUtils.removeEnd(rootPath, File.separator) + File.separator;
         fakeRootItemWithMetaInfo = new TreeItemWithMetaInfo("", "");
         fakeRootItemWithMetaInfo.setItem(new TreeItem((T) new BytesProcessResult("fake root")));
+
     }
 
     private TreeItemWithMetaInfo findItem(String fullPath) {
@@ -40,7 +41,6 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
             }
         }
         log.trace("NOT found item by path {}", fullPath);
-
         return null;
     }
 
@@ -76,8 +76,13 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
         return result;
     }
 
-    public synchronized ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult> generateTree(List<T> bytesProcessResults) {
+    public TreeItem<T> generateTree(List<T> bytesProcessResults) {
+        /*String exception="" ;
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()){
+            exception += element.toString() + "\n";
+        }                       */
         log.debug("generateTree");
+
         for (BytesProcessResult bytesProcessResult : bytesProcessResults) {
             String fullPath = bytesProcessResult.getPath().toString();
             List<String> paths = Arrays.asList(fullPath.split(Pattern.quote(File.separator)));
@@ -106,9 +111,8 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
                 tryToDetectRealRoot(myTreeItem);
             }
         }
-
-        ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult> resultsTreePostProcessor = new ResultsTreePostProcessor<TreeItem<BytesProcessResult>, BytesProcessResult>(rootTreeItem == null ? fakeRootItemWithMetaInfo.getItem() : (TreeItem<BytesProcessResult>) rootTreeItem);
-        return resultsTreePostProcessor;
+        TreeItem<T> treeRootItem = rootTreeItem == null ? fakeRootItemWithMetaInfo.getItem() : rootTreeItem;
+        return treeRootItem;
     }
 
     private void tryToDetectRealRoot(TreeItemWithMetaInfo currentChild) {

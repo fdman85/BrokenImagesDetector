@@ -20,7 +20,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Driver - mediator of a pausable processes
@@ -30,7 +29,7 @@ public class ScanPerformer {
     private final PausableProcessesDriver pausableProcessesDriver;
 
 
-    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Function<Void, Void> onFinish, Function<Void, Void> onCancel, Consumer<ProgressData> refreshProgress) {
+    public ScanPerformer(String folderPath, Set<FileType> fileTypes, Class<? extends IAlgorithm> algorithmClass, Report report, Consumer<Void>  onFinish, Consumer<Void> onCancel, Consumer<ProgressData> refreshProgress) {
 
         BlockingQueue<Map<File, byte[]>> filesQueue = new ArrayBlockingQueue<>(Constants.INPUT_QUEUE_SIZE_NUM);
         LinkedBlockingDeque<Future<BytesProcessResult>> algorithmResultsDeque = new LinkedBlockingDeque<>(Constants.INPUT_QUEUE_SIZE_NUM);

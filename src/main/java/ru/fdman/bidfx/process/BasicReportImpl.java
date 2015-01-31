@@ -3,14 +3,13 @@ package ru.fdman.bidfx.process;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * Created by fdman on 19.07.2014.
  */
 public class BasicReportImpl extends Report {
-    List<BytesProcessResult> bytesProcessResults = Collections.synchronizedList(new ArrayList<>());
+    List<BytesProcessResult> bytesProcessResults = new ArrayList<>();//CopyOnWriteArrayList<>();
     @Override
     public void addLine(BytesProcessResult bytesProcessResult) {
         bytesProcessResults.add(bytesProcessResult);

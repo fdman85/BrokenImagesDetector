@@ -1,24 +1,23 @@
 package ru.fdman.bidfx.process.processes;
 
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.fdman.bidfx.Constants;
-import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.ProgressData;
+import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
 
 import java.util.Calendar;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by fdman on 07.07.2014.
  */
 public class ResultsToReportConverter extends PausableCallable {
-    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = Constants.INPUT_QUEUE_SIZE_NUM / 2;
+    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = 1;//Constants.INPUT_QUEUE_SIZE_NUM / 2;
+    private static final long PROCESSING_WAIT_SECONDS = 2;
     private final Logger log = LoggerFactory
             .getLogger(ResultsToReportConverter.class);
 
@@ -58,8 +57,8 @@ public class ResultsToReportConverter extends PausableCallable {
     }
 
     private void processResultsAndFillReport() {
-        Thread notReadyDequeResultsToReportAppenderThread = new Thread(new NotReadyDequeResultsToReportAppender(), "NotReadyDequeResultsToReportAppender");
-        notReadyDequeResultsToReportAppenderThread.start();
+        ExecutorService notReadyDequeResultsToReportAppenderExecutorService = Executors.newSingleThreadExecutor(new BasicThreadFactory.Builder().namingPattern("NotReadyDequeResultsToReportAppenderThread-%d").build());
+        notReadyDequeResultsToReportAppenderExecutorService.submit(new NotReadyDequeResultsToReportAppender());
         while (!Thread.interrupted()) {
             try {
                 pauseIfNeeded();
@@ -98,18 +97,25 @@ public class ResultsToReportConverter extends PausableCallable {
                 break;
             }
         }
-        notReadyDequeResultsToReportAppenderThread.interrupt();
+        notReadyDequeResultsToReportAppenderExecutorService.shutdownNow();
+
 
     }
 
     @Override
     public ProgressData getProgress() {
         return new ProgressData(
-                (new Integer(futureAlgorithmResults.size()+futureNotReadyAlgorithmResults.size()).doubleValue()),
+                (new Integer(futureAlgorithmResults.size() + futureNotReadyAlgorithmResults.size()).doubleValue()),
                 /*"q1 " + futureAlgorithmResults.size() +"q2 "+futureNotReadyAlgorithmResults.size()*/"");
     }
 
     private class NotReadyDequeResultsToReportAppender implements Runnable {
+
+        @Override
+        public void run() {
+            processDeque();
+        }
+
         private void processDeque() {
             while (!Thread.interrupted()) {
                 try {
@@ -118,7 +124,9 @@ public class ResultsToReportConverter extends PausableCallable {
                         if (bytesProcessResultFuture != null) {
                             if (bytesProcessResultFuture.isDone() || bytesProcessResultFuture.isCancelled()) {
                                 try {
-                                    report.addLine(bytesProcessResultFuture.get());
+                                    if (!Thread.interrupted()) {
+                                        report.addLine(bytesProcessResultFuture.get());
+                                    }
                                 } catch (ExecutionException e) {
                                     log.error("futureAlgorithmResults ExecutionException:\n{}", ExceptionUtils.getStackTrace(e));
                                 }
@@ -132,13 +140,7 @@ public class ResultsToReportConverter extends PausableCallable {
                 } catch (InterruptedException e) {
                     break;
                 }
-
             }
-        }
-
-        @Override
-        public void run() {
-            processDeque();
         }
     }
 }

@@ -154,21 +154,19 @@ public class BidFx extends Application {
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
             treeTableView.setShowRoot(true);
             progressBar.progressProperty().addListener(new ChangeListener<Number>() {
-                private int maxProgressValue = 0;
+                private double maxProgressValue = 0;
 
                 @Override
                 public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
                     if (newValue.doubleValue() >= 0) {
-                        int percent = new Double(newValue.doubleValue() * 100.0).intValue();
                         if (newValue.doubleValue() <= Double.MIN_NORMAL) {
                             maxProgressValue = 0;
                         } else if (newValue.doubleValue() >= 1) {
-                            maxProgressValue = 0;
+                            maxProgressValue = 1;
                         } else {
-                            maxProgressValue = Math.max(maxProgressValue, percent);
+                            maxProgressValue = Math.max(maxProgressValue, newValue.doubleValue());
                         }
-
-                        progressBarProgress.setText("" + Precision.round(maxProgressValue, 0) + "%");
+                        progressBarProgress.setText("" + Precision.round(maxProgressValue * 100., 0) + "%");
                     }
 
                 }
@@ -777,10 +775,7 @@ public class BidFx extends Application {
 
                     scanning = true;
                     Report report = new BasicReportImpl();
-                    Platform.runLater(() -> {
-                                //mainForm.scanBtn.setText("Cancel scan");
-                                setUIDisabled(true);
-                            }
+                    Platform.runLater(() -> setUIDisabled(true)
                     );
 
                     scanPerformer = new ScanPerformer(mainForm.folderPath.getText(),
@@ -798,14 +793,12 @@ public class BidFx extends Application {
                                     alert.setHeaderText(null);
                                     alert.setContentText("Scan completed");
                                     mainForm.progressBar.setProgress(1);
-
                                     alert.show();
                                 });
                             },
                             (aVoid) -> {
                                 log.info("Scan cancelled");
                                 scanning = false;
-
                                 Platform.runLater(() -> {
                                     setUIDisabled(false);
                                     setNewResultTreePostProcessor(report);
@@ -859,11 +852,11 @@ public class BidFx extends Application {
 
 
             private void setNewResultTreePostProcessor(Report report) {
-                log.info("Files scanned: {}", report.getLines().size());
+                List<BytesProcessResult> copiedReportLines = new ArrayList<>(report.getLines());//prevent concurrent exception if some thread will not stop for some reason
+                log.info("Files scanned: {}", copiedReportLines.size());
                 ResultsTreeBuilder resultsTreeBuilder = new ResultsTreeBuilder(mainForm.folderPath.getText());
-                TreeItem treeItem = resultsTreeBuilder.generateTree(report.getLines());
-                resultsTreePostProcessor =
-                        new ResultsTreePostProcessor<>(treeItem);
+                TreeItem treeItem = resultsTreeBuilder.generateTree(copiedReportLines);
+                resultsTreePostProcessor = new ResultsTreePostProcessor<>(treeItem);
 
             }
         }

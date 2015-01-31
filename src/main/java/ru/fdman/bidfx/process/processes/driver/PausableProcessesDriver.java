@@ -18,22 +18,22 @@ import java.util.function.Consumer;
  * Created by fdman on 07.07.2014.
  */
 public class PausableProcessesDriver implements IPausableProcessesDriver {
-
+    private static final long PROCESSING_WAIT_MS = 100;
     protected ProcessDriverState processesDriverState = ProcessDriverState.STOPPED;
     private final List<PausableCallable<?>> callables;
     private final List<Future> callablesFutures;
     private final ExecutorService resultGetterExecutorService;
-    private final Consumer<Void>  onFinish;
-    private final Consumer<Void>  onCancel;
-    private final Consumer<ProgressData>  refreshProgress;
+    private final Consumer<Void> onFinish;
+    private final Consumer<Void> onCancel;
+    private final Consumer<ProgressData> refreshProgress;
     private final Logger log = LoggerFactory
             .getLogger(PausableProcessesDriver.class);
     private volatile boolean scanCancelled = false;
 
-    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Consumer<Void>  onFinish, Consumer<Void>  onCancel, Consumer<ProgressData> refreshProgress) {
+    public PausableProcessesDriver(List<PausableCallable<?>> pausableCallables, Consumer<Void> onFinish, Consumer<Void> onCancel, Consumer<ProgressData> refreshProgress) {
         resultGetterExecutorService = Executors.newFixedThreadPool(pausableCallables.size(), new BasicThreadFactory.Builder().namingPattern("resultGetterExecutorService - %d").build());
         callablesFutures = new ArrayList<>(pausableCallables.size());
-        this.callables=pausableCallables;
+        this.callables = pausableCallables;
         this.onFinish = onFinish;
         this.onCancel = onCancel;
         this.refreshProgress = refreshProgress;
@@ -70,7 +70,7 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
                     for (PausableCallable<?> callable : this.callables) {
                         //sb.append(callable.getName()).append(": ").append(callable.getProgress().getInfo()).append(" ");
                         sb.append(callable.getProgress().getInfo()).append(" ");
-                        d+=callable.getProgress().getTotal();
+                        d += callable.getProgress().getTotal();
                         callable.getProgress();
                     }
                     refreshProgress.accept(new ProgressData(d, sb.toString()));// apply(new ProgressData(d, sb.toString()));
@@ -83,7 +83,7 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
                     return;
                 }
             }
-            if (!scanCancelled){
+            if (!scanCancelled) {
                 onFinish.accept(null);
             }
             processesDriverState = ProcessDriverState.STOPPED;
@@ -106,11 +106,8 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
     /**
      * That method is also used in case when user cancel paused processes.
      * Therefore we must to unlock processes before really interrupting them
-     *
-     * @param waitForUnlock - generally use true when    TODO
      */
-    //TODO param???
-    public void unpauseProcesses(boolean waitForUnlock) {
+    public void unpauseProcesses() {
         synchronized (this) {
             if (processesDriverState == ProcessDriverState.PAUSED) {
                 /*if (waitForUnlock) {
@@ -131,18 +128,23 @@ public class PausableProcessesDriver implements IPausableProcessesDriver {
     }
 
     @Override
-    public synchronized void unpauseProcesses() {
-        unpauseProcesses(false);
-    }
-
-    @Override
     public void cancelProcesses() {
         synchronized (this) {
             if (processesDriverState == ProcessDriverState.PAUSED) { //resume before interrupt! And wait till processes became really unlocked
-                unpauseProcesses(true);
+                unpauseProcesses();
             }
         }
+
         resultGetterExecutorService.shutdownNow();
+        /*resultGetterExecutorService.shutdown();
+        try {
+            resultGetterExecutorService.awaitTermination(PROCESSING_WAIT_MS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            log.warn("processorExecService interrupted {} {} {}", PROCESSING_WAIT_MS, TimeUnit.MILLISECONDS, ExceptionUtils.getStackTrace(e));
+        } finally {
+            resultGetterExecutorService.shutdownNow();
+        } */
+
         processesDriverState = ProcessDriverState.STOPPED;
         scanCancelled = true;
         onCancel.accept(null);

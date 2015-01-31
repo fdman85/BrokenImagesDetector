@@ -81,8 +81,6 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
         for (StackTraceElement element : Thread.currentThread().getStackTrace()){
             exception += element.toString() + "\n";
         }                       */
-        log.debug("generateTree");
-
         for (BytesProcessResult bytesProcessResult : bytesProcessResults) {
             String fullPath = bytesProcessResult.getPath().toString();
             List<String> paths = Arrays.asList(fullPath.split(Pattern.quote(File.separator)));

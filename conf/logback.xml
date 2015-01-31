@@ -16,16 +16,28 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
             <FileNamePattern>BidFX.log.%i.zip</FileNamePattern>
             <MinIndex>1</MinIndex>
-            <MaxIndex>10</MaxIndex>
+            <MaxIndex>5</MaxIndex>
         </rollingPolicy>
 
         <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-            <MaxFileSize>1MB</MaxFileSize>
+            <MaxFileSize>3MB</MaxFileSize>
         </triggeringPolicy>
     </appender>
 
     <logger name="ru.fdman.bidfx" level="TRACE" additivity="false">
         <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="ru.fdman.bidfx" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+    </logger>
+
+    <logger name="it.tidalwave.imageio" level="TRACE" additivity="false">
+        <appender-ref ref="FILE"/>
+    </logger>
+
+    <logger name="it.tidalwave.imageio" level="ERROR" additivity="false">
+        <appender-ref ref="STDOUT"/>
     </logger>
 
     <root level="INFO">

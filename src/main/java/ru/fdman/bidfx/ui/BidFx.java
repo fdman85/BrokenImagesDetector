@@ -64,7 +64,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -128,12 +128,9 @@ public class BidFx extends Application {
         private Button debugBtn = new Button("debug");
         private TreeTableView treeTableView = new TreeTableView();
         private Label moveRenameInfoLabel = new Label("Please, select more meaningful status than SKIPPED for activating 'Rename' button");
-        //private StatusBar statusBar = new StatusBar();
         private Label statusBarText = new Label("Select folder and press scan button");
         private ProgressBar progressBar = new ProgressBar(Double.MIN_NORMAL);
         private Label progressBarProgress = new Label("0%");
-        //private ProgressIndicator progressIndicator = new ProgressIndicator(Double.MIN_NORMAL);
-        //private ProgressBar progressBar = new ProgressBar(0);
 
 
         public MainForm(Stage stage) {
@@ -149,7 +146,6 @@ public class BidFx extends Application {
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
             treeTableView.setShowRoot(true);
-            //progressIndicator.progressProperty().bind(progressBar.progressProperty());
             progressBar.progressProperty().addListener(new ChangeListener<Number>() {
                 private int maxProgressValue = 0;
 
@@ -168,7 +164,6 @@ public class BidFx extends Application {
 
                 }
             });
-            //statusBar.progressProperty()
         }
 
         private GridPane createMainGrid() {
@@ -227,11 +222,6 @@ public class BidFx extends Application {
             progressBarProgress.setMaxWidth(40);
             progressBarProgress.setMinWidth(40);
             progressBarProgress.setPrefWidth(40);
-            //statusBarGrid.add(progressIndicator, 1, 0, 1, 2);
-
-            //progressBar.
-
-            //statusBarGrid.setHgrow(progressIndicator, Priority.NEVER);
             statusBarGrid.setHgrow(progressBar, Priority.NEVER);
             statusBarGrid.setHgrow(statusBarText, Priority.ALWAYS);
             statusBarGrid.setHgrow(progressBarProgress, Priority.NEVER);
@@ -749,18 +739,6 @@ public class BidFx extends Application {
                     .getLogger(ScanBtnEventHandler.class);
             private ScanPerformer scanPerformer;
             private volatile boolean scanning = false;
-            //private long totalFilesInDirectory = -1;
-
-            /*private long countScanDirectoryFiles() {
-                final AtomicLong totalFiles = new AtomicLong(0);
-                try {
-                    Files.walkFileTree(new File(mainForm.folderPath.getText()).toPath(), );
-                } catch (IOException e) {
-                    log.error("{}", ExceptionUtils.getStackTrace(e));
-                    totalFiles.set(-1);
-                }
-                return totalFiles.get();
-            } */
 
             @Override
             public synchronized void handle(ActionEvent event) {
@@ -780,15 +758,15 @@ public class BidFx extends Application {
                         if (result.get() == buttonTypeYes) {
                             scanPerformer.cancelScan();
                             mainForm.scanBtn.setText("Start scan");
+
                             scanning = false;
                         } else {
-                            scanning = true;
                             scanPerformer.unpauseScan();
+                            scanning = true;
                             mainForm.scanBtn.setText("Cancel scan");
                         }
                     });
                 } else {
-                    //totalFilesInDirectory = countScanDirectoryFiles();
                     scanning = true;
                     Report report = new BasicReportImpl();
                     Platform.runLater(() -> mainForm.scanBtn.setText("Cancel scan"));
@@ -808,7 +786,6 @@ public class BidFx extends Application {
                                     alert.setHeaderText(null);
                                     alert.setContentText("Scan completed");
                                     mainForm.progressBar.setProgress(1);
-                                    //mainForm.statusBarProgressValue.setText("100%");
 
                                     alert.show();
                                 });
@@ -823,24 +800,21 @@ public class BidFx extends Application {
                                     refreshTreeTableView();
                                     if (mainForm.progressBar.getProgress() < 0) {
                                         mainForm.progressBar.setProgress(Double.MIN_NORMAL);
-                                        //mainForm.statusBarProgressValue.setText("0%");
                                     }
                                 });
                                 return null;
                             },
-                            new BiConsumer<ProgressData, ProgressData>() {
+                            new Consumer<ProgressData>() {
                                 //tricky hack with progress calculations
                                 private double maxProgressValue = -1d;
 
                                 @Override
-                                public void accept(ProgressData aProgressData, ProgressData aVoid) {
+                                public void accept(ProgressData aProgressData) {
                                     Platform.runLater(() -> {
                                         maxProgressValue = Math.max(aProgressData.getTotal(), maxProgressValue);
                                         double progress = Precision.round(((maxProgressValue - aProgressData.getTotal()) / maxProgressValue), 2);
-                                        //System.out.println("max: " + maxProgressValue + " progress: " + progress + " getTotal: " + aProgressData.getTotal());
                                         if (!Double.isNaN(progress) && progress > 0) {
                                             mainForm.progressBar.setProgress(progress + 0.05);
-                                            //mainForm.statusBarProgressValue.setText(Precision.round(progress * 100., 0) + "%");
                                         } else {
                                             mainForm.progressBar.setProgress(-1);
                                         }
@@ -851,7 +825,6 @@ public class BidFx extends Application {
                     );
                     scanPerformer.performScan();
                     mainForm.progressBar.setProgress(Double.MIN_NORMAL);
-                    //mainForm.statusBarProgressValue.setText("0%");
                 }
             }
 

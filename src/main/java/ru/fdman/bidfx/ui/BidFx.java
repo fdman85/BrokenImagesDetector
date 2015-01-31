@@ -8,6 +8,8 @@ import freemarker.template.TemplateExceptionHandler;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -129,7 +131,8 @@ public class BidFx extends Application {
         //private StatusBar statusBar = new StatusBar();
         private Label statusBarText = new Label("Select folder and press scan button");
         private ProgressBar progressBar = new ProgressBar(Double.MIN_NORMAL);
-        private ProgressIndicator progressIndicator = new ProgressIndicator(Double.MIN_NORMAL);
+        private Label progressBarProgress = new Label("0%");
+        //private ProgressIndicator progressIndicator = new ProgressIndicator(Double.MIN_NORMAL);
         //private ProgressBar progressBar = new ProgressBar(0);
 
 
@@ -146,8 +149,25 @@ public class BidFx extends Application {
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
             treeTableView.setShowRoot(true);
-            progressIndicator.progressProperty().bind(progressBar.progressProperty());
+            //progressIndicator.progressProperty().bind(progressBar.progressProperty());
+            progressBar.progressProperty().addListener(new ChangeListener<Number>() {
+                private int maxProgressValue = 0;
 
+                @Override
+                public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
+                    if (newValue.doubleValue() >= 0) {
+                        int percent = new Double(newValue.doubleValue() * 100.0).intValue();
+                        if (newValue.doubleValue() <= Double.MIN_NORMAL) {
+                            maxProgressValue = 0;
+                        }          else {
+                            maxProgressValue = Math.max(maxProgressValue, percent);
+                        }
+
+                        progressBarProgress.setText("" + Precision.round(maxProgressValue, 0) + "%");
+                    }
+
+                }
+            });
             //statusBar.progressProperty()
         }
 
@@ -166,7 +186,6 @@ public class BidFx extends Application {
             contentGrid.add(getFilterHbox(), 0, 1, 1, 1);
             contentGrid.add(getMoveRenameHbox(), 2, 1, 2, 1);
             contentGrid.add(statusBarGrid, 0, 3, 4, 1);
-
 
 
             contentGrid.setHgrow(extensionsHbox, Priority.ALWAYS);
@@ -200,25 +219,31 @@ public class BidFx extends Application {
 
         private Node getStatusBarGrid() {
             GridPane statusBarGrid = new GridPane();
-            setupStandardFormGrid(statusBarGrid, 16, new Insets(0,0,0,0));
+            setupStandardFormGrid(statusBarGrid, 16, new Insets(0, 0, 0, 0));
             statusBarGrid.setAlignment(Pos.TOP_LEFT);
             statusBarGrid.add(statusBarText, 0, 0, 1, 1);
-            statusBarGrid.add(progressBar, 0, 1, 1, 1);
-            statusBarGrid.add(progressIndicator, 1, 0, 1, 2);
+            statusBarGrid.add(progressBar, 1, 0, 1, 1);
+            statusBarGrid.add(progressBarProgress, 2, 0, 1, 1);
+            progressBarProgress.setMaxWidth(40);
+            progressBarProgress.setMinWidth(40);
+            progressBarProgress.setPrefWidth(40);
+            //statusBarGrid.add(progressIndicator, 1, 0, 1, 2);
 
             //progressBar.
 
-            statusBarGrid.setHgrow(progressIndicator, Priority.NEVER);
-            statusBarGrid.setHgrow(progressBar, Priority.ALWAYS);
+            //statusBarGrid.setHgrow(progressIndicator, Priority.NEVER);
+            statusBarGrid.setHgrow(progressBar, Priority.NEVER);
             statusBarGrid.setHgrow(statusBarText, Priority.ALWAYS);
+            statusBarGrid.setHgrow(progressBarProgress, Priority.NEVER);
 
             statusBarGrid.getColumnConstraints().addAll(
-                    new ColumnConstraints(-1, -1,-1,Priority.ALWAYS,HPos.LEFT, false),
-                    new ColumnConstraints(-1, -1,-1,Priority.NEVER,HPos.RIGHT, true)
-            )        ;
+                    new ColumnConstraints(-1, -1, -1, Priority.ALWAYS, HPos.LEFT, true),
+                    new ColumnConstraints(-1, -1, -1, Priority.NEVER, HPos.RIGHT, false),
+                    new ColumnConstraints(-1, -1, -1, Priority.NEVER, HPos.RIGHT, false)
+            );
 
             statusBarGrid.getRowConstraints().addAll(
-                      new RowConstraints(-1,-1,-1,Priority.NEVER, VPos.CENTER, false)
+                    new RowConstraints(-1, -1, -1, Priority.NEVER, VPos.CENTER, false)
             );
 
             return statusBarGrid;
@@ -832,7 +857,7 @@ public class BidFx extends Application {
 
             private synchronized void updateResultTreePostProcessor(Report report) {
                 log.info("Total report lines (num of scanned files) is {}", report.getLines().size());
-                resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(report.getLines());
+                resultsTreePostProcessor = new ResultsTreeBuilder(mainForm.folderPath.getText()).generateTree(Collections.synchronizedList(report.getLines()));
 
             }
         }

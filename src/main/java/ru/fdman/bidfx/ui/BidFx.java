@@ -939,8 +939,9 @@ public class BidFx extends Application {
                             + ".txt";
                     renamedTotalFilesList = new ArrayList<>();
                     notRenamedTotalFilesList = new ArrayList<>();
-                    iterateTree(root);
+                    iterateTreeAndRename(root);
                     makeTotalReportAndStore();
+                    refreshTreeTableView();
                     Platform.runLater(() -> {
                         Alert alert = new Alert(Alert.AlertType.INFORMATION);
                         alert.setHeaderText(null);
@@ -956,15 +957,16 @@ public class BidFx extends Application {
 
             }
 
-            private void iterateTree(final TreeItem<BytesProcessResult> parentTreeItem) {
+            private void iterateTreeAndRename(final TreeItem<BytesProcessResult> parentTreeItem) {
                 ObservableList<TreeItem<BytesProcessResult>> children = parentTreeItem.getChildren();
                 List<String> renamedAtCurrentLevelFilesList = new ArrayList<>();
                 for (TreeItem<BytesProcessResult> childItem : children) {
-                    iterateTree(childItem);
+                    iterateTreeAndRename(childItem);
 
                     BytesProcessResult bytesProcessResult = childItem.getValue();
                     String renamedFileName = getNewFileName(bytesProcessResult);
                     if (isNeedToRename(bytesProcessResult) && renameFile(bytesProcessResult.getPath().toFile(), renamedFileName)) {
+                        childItem.getValue().setPath(new File(renamedFileName).toPath());
                         renamedAtCurrentLevelFilesList.add(renamedFileName);
                         renamedTotalFilesList.add(bytesProcessResult.getPath().toAbsolutePath().toString() + " renamed to " + FilenameUtils.getName(renamedFileName));
                         log.trace("{} renamed to {}", bytesProcessResult.getPath().toAbsolutePath().toString(), FilenameUtils.getName(renamedFileName));

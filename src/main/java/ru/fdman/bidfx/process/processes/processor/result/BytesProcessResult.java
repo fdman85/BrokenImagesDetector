@@ -9,17 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BytesProcessResult implements Comparable<BytesProcessResult> {
-    private final Path path;
 
-    public boolean isLeaf() {
-        return isLeaf;
-    }
 
+    private Path path;
     private boolean isLeaf;
-
     private String resultName;
     private String description;
-
     private String details;
     private Status status = Status.FOLDER;
     private List<BytesProcessResult> childResults = new ArrayList<>();
@@ -29,14 +24,22 @@ public class BytesProcessResult implements Comparable<BytesProcessResult> {
         this.path = new File(path).toPath();
     }
 
-    public Path getPath() {
-        return path;
-    }
-
     public BytesProcessResult(Path path, String resultName) {
         this.isLeaf = true;
         this.path = path;
         this.resultName = resultName;
+    }
+
+    public Path getPath() {
+        return path;
+    }
+
+    public void setPath(Path path) {
+        this.path = path;
+    }
+
+    public boolean isLeaf() {
+        return isLeaf;
     }
 
     public String getDescription() {

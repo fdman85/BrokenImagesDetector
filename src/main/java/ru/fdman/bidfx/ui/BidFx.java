@@ -13,8 +13,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
-import javafx.event.EventDispatchChain;
-import javafx.event.EventDispatcher;
 import javafx.event.EventHandler;
 import javafx.geometry.HPos;
 import javafx.geometry.Insets;
@@ -480,40 +478,32 @@ public class BidFx extends Application {
                                 getStyleClass().add("tree-table-row-bckgnd-empty");
                                 setId(null);
                             }
-
-                            disableStandardDoubleClick();
-                        }
-
-                        private void disableStandardDoubleClick() {
-                            //Заменяем стандартное поведение по двойному клику на папке
-                            final EventDispatcher originalEventDispatcher = getEventDispatcher();//Disable TreeItem's default expand/collapse on double click JavaFX 2.2
-                            setEventDispatcher(new EventDispatcher() {
-                                @Override
-                                public javafx.event.Event dispatchEvent(javafx.event.Event event, EventDispatchChain tail) {
-                                    if (!event.isConsumed() && event.getEventType() == MouseEvent.MOUSE_RELEASED && ((MouseEvent) event).getClickCount() >= 2
-                                            && ((MouseEvent) event).getButton() == MouseButton.PRIMARY /*&& event.getSource() == treeTableView*/) {
-                                        TreeItem selectedItem = (TreeItem) mainForm.treeTableView.getSelectionModel().getSelectedItem();
-                                        if (selectedItem != null) {
-                                            BytesProcessResult processResult = (BytesProcessResult) selectedItem.getValue();
-                                            if (processResult != null && !processResult.isLeaf()) {
-                                                //Do nothing on dbl click to folder in tree table grid
-                                                event.consume();
-                                            }
-                                        }
-
-                                    }
-                                    return originalEventDispatcher.dispatchEvent(event, tail);
-                                }
-                            });
                         }
                     };
+
+                    treeTableRow.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                        @Override
+                        public void handle(MouseEvent event) {
+                            //row event handled first. select it after click
+                            if (!event.isConsumed() && (event).getButton() == MouseButton.PRIMARY ){
+                                TreeItem treeItem = ((TreeTableRow) event.getSource()).getTreeItem();
+                                mainForm.treeTableView.getSelectionModel().select(treeItem);
+                            }
+                        }
+                    });
+
+
+                    easterEgg(treeTableRow);
+
+                    return treeTableRow;
+                }
+
+                private void easterEgg(TreeTableRow<BytesProcessResult> treeTableRow) {
                     Calendar calendar = Calendar.getInstance();
                     if (calendar.get(Calendar.DATE) == 1 && calendar.get(Calendar.MONTH) == 3) //01.04 easter egg
                     {
                         treeTableRow.setRotate((Math.random() - 0.5) * 3);
                     }
-
-                    return treeTableRow;
                 }
             });
 
@@ -530,28 +520,32 @@ public class BidFx extends Application {
                                     //expand/collapse folder
                                     selectedItem.setExpanded(!selectedItem.isExpanded());
                                 } else if (event.getClickCount() >= 2 && processResult.getPath() != null && processResult.isLeaf()) {
-                                    File f = processResult.getPath().toFile();
-                                    if (f.exists()) {
-                                        if (Desktop.isDesktopSupported()) {
-                                            try {
-                                                Desktop.getDesktop().browse(f.toURI());
-                                            } catch (IOException e) {
-                                                log.warn("Can`t read file. Exception: {}", ExceptionUtils.getMessage(e));
-                                                try {
-                                                    Desktop.getDesktop().browse(f.getParentFile().toURI());
-                                                } catch (IOException e1) {
-                                                    log.error("Can`t read parent file. Exception: {}", ExceptionUtils.getStackTrace(e));
-                                                }
-                                            }
-                                        } else {
-                                            log.warn("Desktop browsing is not supported by your OS JVM :(. Can`t open {} ", processResult.getPath().toString());
-                                        }
-                                    } else {
-                                        log.warn("File {} is not found :(", f.getAbsolutePath());
-                                    }
+                                    openFileOrItsFolder(processResult);
                                 }
                             }
                         }
+                    }
+                }
+
+                private void openFileOrItsFolder(BytesProcessResult processResult) {
+                    File f = processResult.getPath().toFile();
+                    if (f.exists()) {
+                        if (Desktop.isDesktopSupported()) {
+                            try {
+                                Desktop.getDesktop().browse(f.toURI());
+                            } catch (IOException e) {
+                                log.warn("Can`t read file. Exception: {}", ExceptionUtils.getMessage(e));
+                                try {
+                                    Desktop.getDesktop().browse(f.getParentFile().toURI());
+                                } catch (IOException e1) {
+                                    log.error("Can`t read parent file. Exception: {}", ExceptionUtils.getStackTrace(e));
+                                }
+                            }
+                        } else {
+                            log.warn("Desktop browsing is not supported by your OS JVM :(. Can`t open {} ", processResult.getPath().toString());
+                        }
+                    } else {
+                        log.warn("File {} is not found :(", f.getAbsolutePath());
                     }
                 }
             });
@@ -789,11 +783,12 @@ public class BidFx extends Application {
                                     setNewResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     setUIDisabled(false);
-                                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                                    /*Alert alert = new Alert(Alert.AlertType.INFORMATION);
                                     alert.setHeaderText(null);
-                                    alert.setContentText("Scan completed");
+                                    alert.setContentText("Scan completed");*/
                                     mainForm.progressBar.setProgress(1);
-                                    alert.show();
+                                    mainForm.statusBarText.setText("Scanning of \'" + mainForm.folderPath.getText() + "\' completed");
+                                    //alert.show();
                                 });
                             },
                             (aVoid) -> {
@@ -806,6 +801,7 @@ public class BidFx extends Application {
                                     if (mainForm.progressBar.getProgress() < 0) {
                                         mainForm.progressBar.setProgress(Double.MIN_NORMAL);
                                     }
+                                    mainForm.statusBarText.setText("Scan cancelled");
                                 });
                             },
                             new Consumer<ProgressData>() {
@@ -821,6 +817,7 @@ public class BidFx extends Application {
                                             mainForm.progressBar.setProgress(progress + 0.05);
                                         } else {
                                             mainForm.progressBar.setProgress(-1);
+                                            mainForm.statusBarText.setText("Calculating...");
                                         }
                                         mainForm.statusBarText.setText(aProgressData.getInfo());
                                     });
@@ -829,6 +826,7 @@ public class BidFx extends Application {
                     );
                     scanPerformer.performScan();
                     mainForm.progressBar.setProgress(Double.MIN_NORMAL);
+                    //mainForm.statusBarText.setText("Scan completed");
                 }
             }
 

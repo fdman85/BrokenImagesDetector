@@ -9,6 +9,7 @@ import javafx.scene.image.ImageView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
+import ru.fdman.bidfx.process.processes.processor.result.ResultPostInfo;
 
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -26,14 +27,15 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         this.root = root;
     }
 
-    public T shrinkTree(T root) {
-        T newRoot = cloneTreeItem(root);
-        return cloneTree(root, newRoot);
+    public T cloneTree(T root) {
+        //T newRoot = cloneTreeItem(root);
+        return cloneTree(root, cloneTreeItem(root));
     }
 
     private T cloneTreeItem(T oldTreeItem) {
         T newTreeItem = (T) new TreeItem();
         newTreeItem.setValue(oldTreeItem.getValue());
+        newTreeItem.getValue().setResultPostInfo(new ResultPostInfo());
         newTreeItem.setGraphic(oldTreeItem.getGraphic());
         newTreeItem.setExpanded(oldTreeItem.isExpanded());
         newTreeItem.expandedProperty().addListener(expandedPropertyListener);
@@ -61,7 +63,6 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
      * Clone tree by starting from current root
      */
     private T cloneTree(final T oldParentTreeItem, T newParentTreeItem) {
-        //oldParentTreeItem.getChildren().sort((o1, o2) -> o1.getValue().getPath().compareTo(o2.getValue().getPath()));
         ObservableList<T> children = (ObservableList<T>) oldParentTreeItem.getChildren();
         for (T oldChildItem : children) {
             T newChildTreeItem = cloneTreeItem(oldChildItem);
@@ -73,6 +74,35 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
 
     public T getRoot() {
         return root;
+    }
+
+    public void setFoldersInfo(final T parentTreeItem) {
+        R parentItemValue = parentTreeItem.getValue();
+        ObservableList<T> children = (ObservableList<T>) parentTreeItem.getChildren();
+        //going deep into the tree
+        for (T childItem : children) {
+            R childItemValue = childItem.getValue();
+            if (childItemValue !=null){
+                if (childItemValue.isLeaf()){
+                    //all leafs are 1
+                    childItemValue.getResultPostInfo().setTotalInside(1L);
+                }
+            }
+            //going deeper
+            setFoldersInfo(childItem);
+        }
+        //going from deep to outside of tree
+        if (!parentItemValue.isLeaf()){
+            //yep, we know how many leafs are here
+            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside());
+        }
+
+        //pushing total info up and, accumulate it there:
+        TreeItem<R> parentOfParent = parentTreeItem.getParent();     //parentOfParent, yeah baby
+        if (parentOfParent !=null){
+            //yep, say about how many leafs are here to outside
+            parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside()+ parentItemValue.getResultPostInfo().getTotalInside());
+        }
     }
 
     private class ExpandedPropertyListener implements ChangeListener {

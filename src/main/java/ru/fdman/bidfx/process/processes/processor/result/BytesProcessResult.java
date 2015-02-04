@@ -18,6 +18,7 @@ public class BytesProcessResult implements Comparable<BytesProcessResult> {
     private String details;
     private Status status = Status.FOLDER;
     private List<BytesProcessResult> childResults = new ArrayList<>();
+    private ResultPostInfo resultPostInfo;
 
     public BytesProcessResult(String path) {
         this.isLeaf = false;
@@ -94,8 +95,19 @@ public class BytesProcessResult implements Comparable<BytesProcessResult> {
         this.details = details;
     }
 
+    public ResultPostInfo getResultPostInfo() {
+        return resultPostInfo;
+    }
+
+    public void setResultPostInfo(ResultPostInfo resultPostInfo) {
+        this.resultPostInfo = resultPostInfo;
+    }
+
     @Override
     public int compareTo(BytesProcessResult o) {
         return getPath().compareTo(o.getPath());
     }
+
+
 }
+

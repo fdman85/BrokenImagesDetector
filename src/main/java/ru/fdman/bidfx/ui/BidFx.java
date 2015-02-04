@@ -485,7 +485,7 @@ public class BidFx extends Application {
                         @Override
                         public void handle(MouseEvent event) {
                             //row event handled first. select it after click
-                            if (!event.isConsumed() && (event).getButton() == MouseButton.PRIMARY ){
+                            if (!event.isConsumed() && (event).getButton() == MouseButton.PRIMARY) {
                                 TreeItem treeItem = ((TreeTableRow) event.getSource()).getTreeItem();
                                 mainForm.treeTableView.getSelectionModel().select(treeItem);
                             }
@@ -766,7 +766,17 @@ public class BidFx extends Application {
                         }
                     });
                 } else {
-
+                    if (!mainForm.nefCheckBox.isSelected() &&
+                            !mainForm.jpgCheckBox.isSelected() &&
+                            !mainForm.gifCheckBox.isSelected() &&
+                            !mainForm.bidCheckBox.isSelected()
+                            ) {
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setHeaderText(null);
+                        alert.setContentText("Select at least one extension");
+                        alert.show();
+                        return;
+                    }
                     scanning = true;
                     Report report = new BasicReportImpl();
                     Platform.runLater(() -> setUIDisabled(true)
@@ -861,7 +871,7 @@ public class BidFx extends Application {
 
         private void refreshTreeTableView() {
             if (resultsTreePostProcessor != null) {
-                TreeItem<BytesProcessResult> tmpForViewRoot = resultsTreePostProcessor.shrinkTree(resultsTreePostProcessor.getRoot());
+                TreeItem<BytesProcessResult> tmpForViewRoot = resultsTreePostProcessor.cloneTree(resultsTreePostProcessor.getRoot());
                 resultsTreePostProcessor.sortAndFilterTree(tmpForViewRoot,
                         bytesProcessResultTreeItem -> bytesProcessResultTreeItem.getChildren().sort((o1, o2) -> {
                             if (o1.isLeaf() && !o2.isLeaf()) {
@@ -892,6 +902,7 @@ public class BidFx extends Application {
                         });
                 tmpForViewRoot.setExpanded(true);
                 mainForm.treeTableView.setRoot(tmpForViewRoot);
+                resultsTreePostProcessor.setFoldersInfo(tmpForViewRoot);
             }
 
         }

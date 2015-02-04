@@ -28,7 +28,7 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
     public ResultsTreeBuilder(String rootPath) {
         this.rootPath = StringUtils.removeEnd(rootPath, File.separator) + File.separator;
         fakeRootItemWithMetaInfo = new TreeItemWithMetaInfo("", "");
-        fakeRootItemWithMetaInfo.setItem(new TreeItem((T) new BytesProcessResult("fake root")));
+        fakeRootItemWithMetaInfo.setItem(new TreeItem((T) new BytesProcessResult("No results...")));
 
     }
 
@@ -51,13 +51,14 @@ class ResultsTreeBuilder<T extends BytesProcessResult> {
         treeItem.setExpanded(true);
         treeItemWithMetaInfo.setItem(treeItem);
 
-        log.trace("find parent started by {}", StringUtils.removeEnd(fullPath, path));
-        TreeItemWithMetaInfo parent = findItem(StringUtils.removeEnd(fullPath, path));
+        String parentPath = StringUtils.removeEnd(fullPath, path);
+        log.trace("find parent started by {}", parentPath);
+        TreeItemWithMetaInfo parent = findItem(parentPath);
         if (parent == null) {
-            if (StringUtils.isEmpty(StringUtils.removeEnd(fullPath, path))) {
-                log.trace("used fake root as parent ", StringUtils.removeEnd(fullPath, path));
+            if (StringUtils.isEmpty(parentPath)) {
+                log.trace("used fake root as parent ", parentPath);
             } else {
-                throw new IllegalStateException("Parent was not found by " + StringUtils.removeEnd(fullPath, path));
+                throw new IllegalStateException("Parent was not found by " + parentPath);
             }
             parent = fakeRootItemWithMetaInfo;
         }

@@ -86,6 +86,8 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
                 if (childItemValue.isLeaf()){
                     //all leafs are 1
                     childItemValue.getResultPostInfo().setTotalInside(1L);
+                    //there are no leaf that is worstest than itself
+                    childItemValue.getResultPostInfo().setWorstStatus(childItemValue.getStatus());
                 }
             }
             //going deeper
@@ -94,14 +96,21 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         //going from deep to outside of tree
         if (!parentItemValue.isLeaf()){
             //yep, we know how many leafs are here
-            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside());
+            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside()+
+            "worst " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
+            //parentItemValue.getResultPostInfo().setWorstStatus();
         }
 
-        //pushing total info up and, accumulate it there:
+        //pushing total info up and accumulate it there:
         TreeItem<R> parentOfParent = parentTreeItem.getParent();     //parentOfParent, yeah baby
         if (parentOfParent !=null){
             //yep, say about how many leafs are here to outside
             parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside()+ parentItemValue.getResultPostInfo().getTotalInside());
+
+            //push worstest status up
+            if (parentOfParent.getValue().getResultPostInfo().getWorstStatus().getPriority()<parentItemValue.getResultPostInfo().getWorstStatus().getPriority()){
+                parentOfParent.getValue().getResultPostInfo().setWorstStatus(parentItemValue.getResultPostInfo().getWorstStatus());
+            }
         }
     }
 

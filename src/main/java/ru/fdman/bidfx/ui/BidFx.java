@@ -260,7 +260,7 @@ public class BidFx extends Application {
         }
 
         private Node getFilterHbox() {
-            Label filterLbl = new Label("Show results with status");
+            Label filterLbl = new Label("Show results that are");
             HBox filterHbox = new HBox(10,
                     filterLbl,
                     clauseFilterComboBox,
@@ -756,7 +756,6 @@ public class BidFx extends Application {
                         Optional<ButtonType> result = alert.showAndWait();
                         if (result.get() == buttonTypeYes) {
                             scanPerformer.cancelScan();
-                            //mainForm.scanBtn.setText("Start scan");
                             setUIDisabled(false);
                             scanning = false;
                         } else {
@@ -793,12 +792,8 @@ public class BidFx extends Application {
                                     setNewResultTreePostProcessor(report);
                                     refreshTreeTableView();
                                     setUIDisabled(false);
-                                    /*Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                                    alert.setHeaderText(null);
-                                    alert.setContentText("Scan completed");*/
                                     mainForm.progressBar.setProgress(1);
                                     mainForm.statusBarText.setText("Scanning of \'" + mainForm.folderPath.getText() + "\' completed");
-                                    //alert.show();
                                 });
                             },
                             (aVoid) -> {

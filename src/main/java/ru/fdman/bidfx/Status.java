@@ -7,8 +7,7 @@ public enum Status {
     WARN(500),
     ERROR(900),
     CRITICAL(999),
-    SMTH_GOES_WRONG(1000),
-    ;
+    SMTH_GOES_WRONG(1000),;
 
     Status(int priority) {
         this.priority = priority;
@@ -19,4 +18,26 @@ public enum Status {
     }
 
     private int priority = 0;
+
+    @Override
+    public String toString() {
+        switch (this) {
+            case FOLDER:
+                return "Folder";
+            case OK:
+                return "Ok";
+            case SKIPPED:
+                return "Skipped";
+            case WARN:
+                return "Warning";
+            case ERROR:
+                return "Error";
+            case CRITICAL:
+                return "Critical";
+            case SMTH_GOES_WRONG:
+                return "Something goes wrong :(";
+
+        }
+        return super.toString();
+    }
 }

@@ -25,9 +25,12 @@ public class ResultPostInfo {
         return byStatusesMap;
     }
 
-    public void setByStatusesMap(Map<Status, Long> byStatusesMap) {
-        this.byStatusesMap = byStatusesMap;
+    public void addValueToByStatusesMap(Status status, long value){
+        addToByStatusesMap(byStatusesMap, status, value);
+        //byStatusesMap.put(status, byStatusesMap.get(status)+value);
     }
+
+
 
     public Status getWorstStatus() {
         return worstStatus;
@@ -43,5 +46,16 @@ public class ResultPostInfo {
 
     public void setTotalInside(long totalInside) {
         this.totalInside = totalInside;
+    }
+
+    public static void addStatusesMapToFirst(Map<Status, Long> aMap1, Map<Status, Long> aMap2) {
+        for (Status status : aMap2.keySet()) {
+            addToByStatusesMap(aMap1, status, aMap2.get(status));
+        }
+
+    }
+
+    private static void addToByStatusesMap(Map<Status, Long> aMap, Status status, long value){
+        aMap.put(status, aMap.get(status)+value);
     }
 }

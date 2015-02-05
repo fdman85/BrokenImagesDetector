@@ -89,40 +89,35 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
                     childItemValue.getResultPostInfo().setTotalInside(1L);
                     //there are no leaf that is worstest than itself
                     childItemValue.getResultPostInfo().setWorstStatus(childItemValue.getStatus());
-                    //
-                    childItemValue.getResultPostInfo().getByStatusesMap().put(
-                            childItemValue.getStatus(),
-                            childItemValue.getResultPostInfo().getByStatusesMap().get(childItemValue.getStatus()) + 1L);
                 }
+                //maybe we need info about subfolders count too...
+                childItemValue.getResultPostInfo().addValueToByStatusesMap(childItemValue.getStatus(), 1L);
             }
-            //going deeper
+            //going deeper..
             setFoldersInfo(childItem);
         }
-        //going from deep to outside of tree
-        //if (!parentItemValue.isLeaf()) {
-            //yep, we know how many leafs are here
-            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside() +
-                    " " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
-        parentItemValue.setDetails("" + parentItemValue.getResultPostInfo().getByStatusesMap());
 
-        //}
-
+        //going from deep to outside of tree...
         //pushing total info up and accumulate it there:
         TreeItem<R> parentOfParent = parentTreeItem.getParent();     //parentOfParent, yeah baby
         if (parentOfParent != null) {
-            //yep, say about how many leafs are here to outside
+            //yep, say to outside about how many leafs are here to outside
             parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside() + parentItemValue.getResultPostInfo().getTotalInside());
-
             //push status statistics up
-            //TODO fix by java 8 stream. concatenate http://docs.oracle.com/javase/tutorial/collections/streams/reduction.html
-            parentOfParent.getValue().getResultPostInfo().getByStatusesMap().put(
-                    parentItemValue.getStatus(),
-                    parentItemValue.getResultPostInfo().getByStatusesMap().get(parentItemValue.getStatus()) + 1L);
-
+            ResultPostInfo.addStatusesMapToFirst(parentOfParent.getValue().getResultPostInfo().getByStatusesMap(), parentItemValue.getResultPostInfo().getByStatusesMap());
             //push worstest status up
             if (parentOfParent.getValue().getResultPostInfo().getWorstStatus().getPriority() < parentItemValue.getResultPostInfo().getWorstStatus().getPriority()) {
                 parentOfParent.getValue().getResultPostInfo().setWorstStatus(parentItemValue.getResultPostInfo().getWorstStatus());
             }
+        }
+
+        //set already pushed info to that non-leaf
+        if (!parentItemValue.isLeaf()) {
+            //yep, we know how many leafs are here
+            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside() +
+                    " " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
+            //and which statuses they have
+            parentItemValue.setDetails("" + parentItemValue.getResultPostInfo().getByStatusesMap());
         }
     }
 

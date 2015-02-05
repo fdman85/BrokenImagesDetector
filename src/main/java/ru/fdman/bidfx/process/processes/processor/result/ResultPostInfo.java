@@ -11,6 +11,12 @@ import java.util.Map;
 public class ResultPostInfo {
     private Map<Status, Long> byStatusesMap = new HashMap<>();
 
+    public ResultPostInfo() {
+        for (Status status : Status.values()) {
+            byStatusesMap.put(status, 0L);
+        }
+    }
+
     private Status worstStatus = Status.FOLDER;
 
     private long totalInside = 0;

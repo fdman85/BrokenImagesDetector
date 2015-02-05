@@ -45,6 +45,7 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
     /**
      * Итерироваться по дереву и отсортировать его с помощью sortTreeCallback (фильтруем детей текущего parentTreeItem в
      * Consumer sortTreeCallback), а также отфильтровать листья с помощью Predicate filterValuesCallback
+     *
      * @param parentTreeItem
      * @param sortTreeCallback
      * @param filterValuesCallback
@@ -82,33 +83,44 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         //going deep into the tree
         for (T childItem : children) {
             R childItemValue = childItem.getValue();
-            if (childItemValue !=null){
-                if (childItemValue.isLeaf()){
+            if (childItemValue != null) {
+                if (childItemValue.isLeaf()) {
                     //all leafs are 1
                     childItemValue.getResultPostInfo().setTotalInside(1L);
                     //there are no leaf that is worstest than itself
                     childItemValue.getResultPostInfo().setWorstStatus(childItemValue.getStatus());
+                    //
+                    childItemValue.getResultPostInfo().getByStatusesMap().put(
+                            childItemValue.getStatus(),
+                            childItemValue.getResultPostInfo().getByStatusesMap().get(childItemValue.getStatus()) + 1L);
                 }
             }
             //going deeper
             setFoldersInfo(childItem);
         }
         //going from deep to outside of tree
-        if (!parentItemValue.isLeaf()){
+        //if (!parentItemValue.isLeaf()) {
             //yep, we know how many leafs are here
-            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside()+
-            "worst " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
-            //parentItemValue.getResultPostInfo().setWorstStatus();
-        }
+            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside() +
+                    " " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
+        parentItemValue.setDetails("" + parentItemValue.getResultPostInfo().getByStatusesMap());
+
+        //}
 
         //pushing total info up and accumulate it there:
         TreeItem<R> parentOfParent = parentTreeItem.getParent();     //parentOfParent, yeah baby
-        if (parentOfParent !=null){
+        if (parentOfParent != null) {
             //yep, say about how many leafs are here to outside
-            parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside()+ parentItemValue.getResultPostInfo().getTotalInside());
+            parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside() + parentItemValue.getResultPostInfo().getTotalInside());
+
+            //push status statistics up
+            //TODO fix by java 8 stream. concatenate http://docs.oracle.com/javase/tutorial/collections/streams/reduction.html
+            parentOfParent.getValue().getResultPostInfo().getByStatusesMap().put(
+                    parentItemValue.getStatus(),
+                    parentItemValue.getResultPostInfo().getByStatusesMap().get(parentItemValue.getStatus()) + 1L);
 
             //push worstest status up
-            if (parentOfParent.getValue().getResultPostInfo().getWorstStatus().getPriority()<parentItemValue.getResultPostInfo().getWorstStatus().getPriority()){
+            if (parentOfParent.getValue().getResultPostInfo().getWorstStatus().getPriority() < parentItemValue.getResultPostInfo().getWorstStatus().getPriority()) {
                 parentOfParent.getValue().getResultPostInfo().setWorstStatus(parentItemValue.getResultPostInfo().getWorstStatus());
             }
         }
@@ -119,7 +131,7 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         public void changed(ObservableValue observable, Object oldValue, Object newValue) {
             BooleanProperty booleanProperty = (BooleanProperty) observable;
             TreeItem t = (TreeItem) booleanProperty.getBean();
-            if ((Boolean)newValue) {
+            if ((Boolean) newValue) {
                 t.setGraphic(new ImageView(
                         "icons/com.iconfinder/tango-icon-library/1415555509_folder-open-20.png"));
             } else {

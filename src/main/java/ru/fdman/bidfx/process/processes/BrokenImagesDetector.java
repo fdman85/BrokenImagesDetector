@@ -81,6 +81,7 @@ public class BrokenImagesDetector extends PausableCallable {
     }
 
     private void handleQueueAndPushFutureResultsToReportDeque() {
+        //int tmp=0;
         while (!Thread.interrupted()) {
             pauseIfNeeded();
             if (queue.peek() != null) {
@@ -88,6 +89,7 @@ public class BrokenImagesDetector extends PausableCallable {
                 //log.trace("File polled from queue");
                 if (null != dataMap && !dataMap.isEmpty()) {
                     try {
+                        //tmp++;
                         //log.trace("BrokenImagesDetector before put last");
                         futureAlgorithmResults.putLast(processorExecService.submit(new FileBytesProcessor(dataMap, algorithmPool)));
                         //log.trace("BrokenImagesDetector after put last");
@@ -107,6 +109,7 @@ public class BrokenImagesDetector extends PausableCallable {
             log.warn("processorExecService interrupted {} {} {}", PROCESSING_WAIT_SECONDS, TimeUnit.SECONDS, ExceptionUtils.getStackTrace(e));
             processorExecService.shutdownNow();
         }
+        //log.info("BID cnt: {}", tmp);
     }
 
     @Override

@@ -4,7 +4,6 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ru.fdman.bidfx.Constants;
 import ru.fdman.bidfx.process.ProgressData;
 import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
@@ -17,9 +16,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by fdman on 07.07.2014.
  */
 public class ResultsToReportConverter extends PausableCallable {
-    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = Constants.INPUT_QUEUE_SIZE_NUM / 2;
+    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = 1;//Constants.INPUT_QUEUE_SIZE_NUM / 2;TODO
     private final Logger log = LoggerFactory
             .getLogger(ResultsToReportConverter.class);
+    //private final AtomicInteger linesAdded = new AtomicInteger(0);
 
 
     private final AtomicInteger maxNotReadyResultsSize = new AtomicInteger(0);
@@ -67,7 +67,14 @@ public class ResultsToReportConverter extends PausableCallable {
                     if (bytesProcessResultFuture != null) {
                         if (bytesProcessResultFuture.isDone() || bytesProcessResultFuture.isCancelled()) {
                             try {
-                                report.addLine(bytesProcessResultFuture.get());
+                                BytesProcessResult bytesProcessResult = bytesProcessResultFuture.get();
+                                if (bytesProcessResult != null) {
+                                    report.addLine(bytesProcessResult);
+                                    //linesAdded.incrementAndGet();
+                                } else {
+                                    log.warn("Adding null result has benn detected");
+                                }
+
                             } catch (ExecutionException e) {
                                 log.error("futureAlgorithmResults ExecutionException:\n{}", ExceptionUtils.getStackTrace(e));
                             }
@@ -77,11 +84,10 @@ public class ResultsToReportConverter extends PausableCallable {
                                     futureNotReadyAlgorithmResults.putLast(bytesProcessResultFuture);
                                     break;
                                 }
-                                Thread.sleep(5);
                             }
-                            if (Thread.interrupted()) {
+                            /*if (Thread.interrupted()) {
                                 break;
-                            }
+                            }*/
                         }
                     } else {
                         log.error("Some went wrong. Took null element from base deque");
@@ -98,7 +104,7 @@ public class ResultsToReportConverter extends PausableCallable {
             }
         }
         notReadyDequeResultsToReportAppenderExecutorService.shutdownNow();
-
+        //log.info("RTRC cnt: {}", linesAdded.get());
 
     }
 
@@ -126,6 +132,7 @@ public class ResultsToReportConverter extends PausableCallable {
                                 try {
                                     if (!Thread.interrupted()) {
                                         report.addLine(bytesProcessResultFuture.get());
+                                        //linesAdded.incrementAndGet();
                                     }
                                 } catch (ExecutionException e) {
                                     log.error("futureAlgorithmResults ExecutionException:\n{}", ExceptionUtils.getStackTrace(e));

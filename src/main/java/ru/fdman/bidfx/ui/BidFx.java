@@ -709,8 +709,7 @@ public class BidFx extends Application {
                     }
                     scanning = true;
                     Report report = new BasicReportImpl();
-                    Platform.runLater(() -> setUIDisabled(true)
-                    );
+                    Platform.runLater(() -> setUIDisabled(true));
 
                     scanPerformer = new ScanPerformer(mainForm.folderPath.getText(),
                             getSelectedFileTypes(),

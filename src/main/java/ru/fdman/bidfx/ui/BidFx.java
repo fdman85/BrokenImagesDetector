@@ -339,14 +339,11 @@ public class BidFx extends Application {
                             alert.setHeaderText(null);
                             alert.setContentText(treeItem.getValue().getPath().toString());
 
-
                             // Create expandable Exception.
                             Label label = new Label("The exception stacktrace was:");
-
                             TextArea textArea = new TextArea(message);
                             textArea.setEditable(false);
                             textArea.setWrapText(true);
-
                             textArea.setMaxWidth(Double.MAX_VALUE);
                             textArea.setMaxHeight(Double.MAX_VALUE);
                             GridPane.setVgrow(textArea, Priority.ALWAYS);
@@ -381,15 +378,7 @@ public class BidFx extends Application {
                                 default:
                                     alert.setAlertType(Alert.AlertType.INFORMATION);
                             }
-
-                            Optional<ButtonType> result = alert.showAndWait();
-                            if (result.get() == buttonTypeCopy) {
-//                                final Clipboard clipboard = Clipboard.getSystemClipboard();
-//                                final ClipboardContent content = new ClipboardContent();
-//                                content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
-//                                clipboard.setContent(content);
-
-                            }
+                            alert.showAndWait();
                         });
                         setGraphic(hBox);
                     } else {
@@ -443,9 +432,6 @@ public class BidFx extends Application {
         private void setupFreeMarkerEngine() throws IOException, URISyntaxException {
             freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_21);
             freeMarkerCfg.setDirectoryForTemplateLoading(new File(this.getClass().getClassLoader().getResource("freemarker").toURI()));
-            //Template freemarkerTemplate = freeMarkerCfg.getTemplate("email/vendor.tpl");
-
-            //freeMarkerCfg.setDirectoryForTemplateLoading(new File());
             freeMarkerCfg.setDefaultEncoding("UTF-8");
             freeMarkerCfg.setTemplateExceptionHandler(TemplateExceptionHandler.DEBUG_HANDLER);
         }
@@ -486,8 +472,42 @@ public class BidFx extends Application {
                         public void handle(MouseEvent event) {
                             //row event handled first. select it after click
                             if (!event.isConsumed() && (event).getButton() == MouseButton.PRIMARY) {
-                                TreeItem treeItem = ((TreeTableRow) event.getSource()).getTreeItem();
-                                mainForm.treeTableView.getSelectionModel().select(treeItem);
+                                TreeItem selectedItem = ((TreeTableRow) event.getSource()).getTreeItem();
+                                if (selectedItem != null) {
+                                    mainForm.treeTableView.getSelectionModel().select(selectedItem);
+                                    BytesProcessResult processResult = (BytesProcessResult) selectedItem.getValue();
+                                    if (processResult != null) {
+                                        if (event.getClickCount() >= 1 && !processResult.isLeaf()) {
+                                            //expand/collapse folder
+                                            selectedItem.setExpanded(!selectedItem.isExpanded());
+                                        } else if (event.getClickCount() >= 2 && processResult.getPath() != null && processResult.isLeaf()) {
+                                            openFileOrItsFolder(processResult);
+                                        }
+                                    }
+                                }
+
+                            }
+                        }
+
+                        private void openFileOrItsFolder(BytesProcessResult processResult) {
+                            File f = processResult.getPath().toFile();
+                            if (f.exists()) {
+                                if (Desktop.isDesktopSupported()) {
+                                    try {
+                                        Desktop.getDesktop().browse(f.toURI());
+                                    } catch (IOException e) {
+                                        log.warn("Can`t read file. Exception: {}", ExceptionUtils.getMessage(e));
+                                        try {
+                                            Desktop.getDesktop().browse(f.getParentFile().toURI());
+                                        } catch (IOException e1) {
+                                            log.error("Can`t read parent file. Exception: {}", ExceptionUtils.getStackTrace(e));
+                                        }
+                                    }
+                                } else {
+                                    log.warn("Desktop browsing is not supported by your OS JVM :(. Can`t open {} ", processResult.getPath().toString());
+                                }
+                            } else {
+                                log.warn("File {} is not found :(", f.getAbsolutePath());
                             }
                         }
                     });
@@ -503,49 +523,6 @@ public class BidFx extends Application {
                     if (calendar.get(Calendar.DATE) == 1 && calendar.get(Calendar.MONTH) == 3) //01.04 easter egg
                     {
                         treeTableRow.setRotate((Math.random() - 0.5) * 3);
-                    }
-                }
-            });
-
-
-            mainForm.treeTableView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-                @Override
-                public void handle(MouseEvent event) {
-                    if (event.getButton() == MouseButton.PRIMARY) {
-                        TreeItem selectedItem = (TreeItem) mainForm.treeTableView.getSelectionModel().getSelectedItem();
-                        if (selectedItem != null) {
-                            BytesProcessResult processResult = (BytesProcessResult) selectedItem.getValue();
-                            if (processResult != null) {
-                                if (event.getClickCount() >= 1 && !processResult.isLeaf()) {
-                                    //expand/collapse folder
-                                    selectedItem.setExpanded(!selectedItem.isExpanded());
-                                } else if (event.getClickCount() >= 2 && processResult.getPath() != null && processResult.isLeaf()) {
-                                    openFileOrItsFolder(processResult);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                private void openFileOrItsFolder(BytesProcessResult processResult) {
-                    File f = processResult.getPath().toFile();
-                    if (f.exists()) {
-                        if (Desktop.isDesktopSupported()) {
-                            try {
-                                Desktop.getDesktop().browse(f.toURI());
-                            } catch (IOException e) {
-                                log.warn("Can`t read file. Exception: {}", ExceptionUtils.getMessage(e));
-                                try {
-                                    Desktop.getDesktop().browse(f.getParentFile().toURI());
-                                } catch (IOException e1) {
-                                    log.error("Can`t read parent file. Exception: {}", ExceptionUtils.getStackTrace(e));
-                                }
-                            }
-                        } else {
-                            log.warn("Desktop browsing is not supported by your OS JVM :(. Can`t open {} ", processResult.getPath().toString());
-                        }
-                    } else {
-                        log.warn("File {} is not found :(", f.getAbsolutePath());
                     }
                 }
             });
@@ -688,51 +665,6 @@ public class BidFx extends Application {
             this.scene = scene;
         }
 
-
-        private class TreeTableRowMouseEventHandler implements EventHandler<MouseEvent> {
-            private final Logger log;
-            private final TreeTableRow<BytesProcessResult> treeTableRow;
-
-            public TreeTableRowMouseEventHandler(TreeTableRow<BytesProcessResult> treeTableRow) {
-                this.treeTableRow = treeTableRow;
-                log = LoggerFactory
-                        .getLogger(getClass());
-            }
-
-            @Override
-            public void handle(MouseEvent event) {
-                if (treeTableRow.getIndex() < 0) {
-                    return;
-                }
-
-                if (event.getClickCount() != 2) {
-                    return;
-                }
-                BytesProcessResult processResult = treeTableRow.getItem();
-                if (processResult.getPath() != null) {
-                    File f = processResult.getPath().toFile();
-                    if (f.exists()) {
-                        if (Desktop.isDesktopSupported()) {
-                            try {
-                                Desktop.getDesktop().browse(f.toURI());
-                            } catch (IOException e) {
-                                log.warn("Can`t read file. Exception: {}", ExceptionUtils.getMessage(e));
-                                try {
-                                    Desktop.getDesktop().browse(f.getParentFile().toURI());
-                                } catch (IOException e1) {
-                                    log.error("Can`t read parent file. Exception: {}", ExceptionUtils.getStackTrace(e));
-                                }
-                            }
-                        } else {
-                            log.warn("Desktop browsing is not supported by your OS JVM :(. Can`t open {} ", processResult.getPath().toString());
-                        }
-                    } else {
-                        log.warn("File {} is not found :(", f.getAbsolutePath());
-                    }
-                }
-            }
-        }
-
         private class ScanBtnEventHandler implements EventHandler<ActionEvent> {
             private final Logger log = LoggerFactory
                     .getLogger(ScanBtnEventHandler.class);
@@ -831,7 +763,6 @@ public class BidFx extends Application {
                     );
                     scanPerformer.performScan();
                     mainForm.progressBar.setProgress(Double.MIN_NORMAL);
-                    //mainForm.statusBarText.setText("Scan completed");
                 }
             }
 
@@ -1211,7 +1142,6 @@ class FormConfigController {
         return formConfig;
     }
 }
-
 
 enum Clause {
     EQUAL,

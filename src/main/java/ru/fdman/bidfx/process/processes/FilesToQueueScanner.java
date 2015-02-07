@@ -40,7 +40,7 @@ public class FilesToQueueScanner extends PausableCallable {
 
     @Override
     public Object call() {
-        log.trace("FilesToQueueScanner STARTED");
+        log.info("FilesToQueueScanner STARTED");
         long start = Calendar.getInstance().getTimeInMillis();
         filesTotal.set(0L);
         try {
@@ -50,7 +50,7 @@ public class FilesToQueueScanner extends PausableCallable {
             log.error("{}", ExceptionUtils.getStackTrace(e));
         }
         Long delta = Calendar.getInstance().getTimeInMillis() - start;
-        log.trace("FilesToQueueScanner FINISHED. Total time: {} ms. Accepted files: {}", delta, filesTotal);
+        log.info("FilesToQueueScanner FINISHED. Total time: {} ms. Accepted files: {}", delta, filesTotal);
         getNextFinishManager().setCanFinishFlag(true);
         return true;
     }
@@ -82,7 +82,7 @@ public class FilesToQueueScanner extends PausableCallable {
                         //log.trace("End add file {} to queue", file.getName());
                         currentScannedFile = file.getAbsolutePath();
                     } else {
-                        //log.trace("File {} skipped", file.getName());
+                        log.info("File {} skipped", file.getName());
                     }
                     return super.visitFile(path, attrs);
                 } catch (InterruptedException | ClosedByInterruptException e) {

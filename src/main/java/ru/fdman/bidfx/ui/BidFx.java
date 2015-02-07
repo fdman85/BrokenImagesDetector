@@ -72,7 +72,6 @@ import java.util.stream.Collectors;
  * Created by fdman on 24.06.2014.
  */
 public class BidFx extends Application {
-    //TODO only one app is allowed?
     public static void main(String[] args) {
         launch(args);
     }

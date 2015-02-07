@@ -4,6 +4,7 @@ import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ru.fdman.bidfx.Constants;
 import ru.fdman.bidfx.process.ProgressData;
 import ru.fdman.bidfx.process.Report;
 import ru.fdman.bidfx.process.processes.processor.result.BytesProcessResult;
@@ -16,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Created by fdman on 07.07.2014.
  */
 public class ResultsToReportConverter extends PausableCallable {
-    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = 1;//Constants.INPUT_QUEUE_SIZE_NUM / 2;TODO
+    public static final int NOT_READY_RESULTS_DEQUE_MAX_RECOMMENDED_SIZE = Constants.INPUT_QUEUE_SIZE_NUM / 2;
     private final Logger log = LoggerFactory
             .getLogger(ResultsToReportConverter.class);
     //private final AtomicInteger linesAdded = new AtomicInteger(0);

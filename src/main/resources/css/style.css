@@ -16,13 +16,25 @@
     -fx-background-color: white;
 }
 
-/**/
 .tree-table-row-bckgnd-with-status {
     -fx-background-color: rgba(147, 112, 219, 0.50);
 }
 
 .tree-table-row-bckgnd-with-status:selected {
     -fx-background-color: rgba(147, 112, 219, 0.75);
+}
+
+.tree-table-row-details-btn {
+    -fx-background-color: rgba(147, 112, 219, 0.12);
+    -fx-border-width: 0;
+    -fx-background-radius: 7px;
+    -fx-background-insets: 2px;
+}
+
+.tree-table-row-details-btn:hover {
+    -fx-background-color: rgba(147, 112, 219, 0.45);
+    -fx-border-width: 0;
+    -fx-cursor: hand;
 }
 
 /**/

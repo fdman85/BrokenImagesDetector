@@ -328,7 +328,8 @@ public class BidFx extends Application {
                         Button button = new Button("...");
                         button.setMaxSize(lbl.getHeight() / 2, lbl.getHeight() / 2);
                         HBox hBox = new HBox(lbl, button);
-                        button.getStyleClass().add("tree-table-row-bckgnd-with-status");
+                        hBox.setAlignment(Pos.CENTER_LEFT);
+                        button.getStyleClass().add("tree-table-row-details-btn");
                         button.setOnAction(event -> {
                             getTreeTableView().getSelectionModel().select(treeItem);
                             String message = item.replaceAll("\\r\\n", "").trim();

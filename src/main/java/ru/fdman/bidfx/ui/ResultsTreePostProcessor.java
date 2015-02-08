@@ -86,7 +86,7 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
             if (childItemValue != null) {
                 if (childItemValue.isLeaf()) {
                     //all leafs are 1
-                    childItemValue.getResultPostInfo().setTotalInside(1L);
+                    childItemValue.getResultPostInfo().setTotalNonFoldersInside(1L);
                     //there are no leaf that is worstest than itself
                     childItemValue.getResultPostInfo().setWorstStatus(childItemValue.getStatus());
                 }
@@ -102,9 +102,9 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         TreeItem<R> parentOfParent = parentTreeItem.getParent();     //parentOfParent, yeah baby
         if (parentOfParent != null) {
             //yep, say to outside about how many leafs are here to outside
-            parentOfParent.getValue().getResultPostInfo().setTotalInside(parentOfParent.getValue().getResultPostInfo().getTotalInside() + parentItemValue.getResultPostInfo().getTotalInside());
+            parentOfParent.getValue().getResultPostInfo().setTotalNonFoldersInside(parentOfParent.getValue().getResultPostInfo().getTotalNonFoldersInside() + parentItemValue.getResultPostInfo().getTotalNonFoldersInside());
             //push status statistics up
-            ResultPostInfo.addStatusesMapToFirst(parentOfParent.getValue().getResultPostInfo().getByStatusesMap(), parentItemValue.getResultPostInfo().getByStatusesMap());
+            ResultPostInfo.addStatusesToFirstMap(parentOfParent.getValue().getResultPostInfo().getByStatusesMap(), parentItemValue.getResultPostInfo().getByStatusesMap());
             //push worstest status up
             if (parentOfParent.getValue().getResultPostInfo().getWorstStatus().getPriority() < parentItemValue.getResultPostInfo().getWorstStatus().getPriority()) {
                 parentOfParent.getValue().getResultPostInfo().setWorstStatus(parentItemValue.getResultPostInfo().getWorstStatus());
@@ -112,13 +112,13 @@ public class ResultsTreePostProcessor<T extends TreeItem<R>, R extends BytesProc
         }
 
         //set already pushed info to that non-leaf
-        if (!parentItemValue.isLeaf()) {
+        /*if (!parentItemValue.isLeaf()) {
             //yep, we know how many leafs are here
-            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalInside() +
+            parentItemValue.setDescription("Total: " + parentItemValue.getResultPostInfo().getTotalNonFoldersInside() +
                     " " + parentItemValue.getResultPostInfo().getWorstStatus().toString());
             //and which statuses they have
             parentItemValue.setDetails("" + parentItemValue.getResultPostInfo().getByStatusesMap());
-        }
+        }   */
     }
 
     private class ExpandedPropertyListener implements ChangeListener {

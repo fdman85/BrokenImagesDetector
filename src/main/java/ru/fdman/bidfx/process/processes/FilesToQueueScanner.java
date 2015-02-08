@@ -82,7 +82,7 @@ public class FilesToQueueScanner extends PausableCallable {
                         //log.trace("End add file {} to queue", file.getName());
                         currentScannedFile = file.getAbsolutePath();
                     } else {
-                        log.info("File {} skipped", file.getName());
+                        log.trace("File {} skipped", file.getName());
                     }
                     return super.visitFile(path, attrs);
                 } catch (InterruptedException | ClosedByInterruptException e) {

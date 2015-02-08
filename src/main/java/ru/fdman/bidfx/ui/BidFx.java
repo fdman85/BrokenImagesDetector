@@ -63,7 +63,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -173,7 +175,7 @@ public class BidFx extends Application {
         private GridPane createMainGrid() {
             GridPane contentGrid = new GridPane();
             //contentGrid.setGridLinesVisible(true);
-            setupStandardFormGrid(contentGrid, UIConstants.GAP_STD, UIConstants.INSETS_STD);
+            setupGridParams(contentGrid, UIConstants.GAP_STD, UIConstants.INSETS_STD);
 
             Node extensionsHbox = getExtensionsHbox();
             Node treeTableViewVbox = getTreeTableViewVbox();
@@ -194,7 +196,7 @@ public class BidFx extends Application {
             return contentGrid;
         }
 
-        private void setupStandardFormGrid(GridPane contentGrid, double gap, Insets insets) {
+        private void setupGridParams(GridPane contentGrid, double gap, Insets insets) {
             contentGrid.setHgap(gap);
             contentGrid.setVgap(gap);
             contentGrid.setPadding(UIConstants.INSETS_STD);
@@ -218,7 +220,7 @@ public class BidFx extends Application {
 
         private Node getStatusBarGrid() {
             GridPane statusBarGrid = new GridPane();
-            setupStandardFormGrid(statusBarGrid, 16, new Insets(0, 0, 0, 0));
+            setupGridParams(statusBarGrid, 16, new Insets(0, 0, 0, 0));
             statusBarGrid.setAlignment(Pos.TOP_LEFT);
             statusBarGrid.add(statusBarText, 0, 0, 1, 1);
             statusBarGrid.add(progressBar, 1, 0, 1, 1);
@@ -290,6 +292,7 @@ public class BidFx extends Application {
 
             nameCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<BytesProcessResult, String> p) -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getPath().toFile().getName()));
             statusCol.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null || p.getValue().getValue().getStatus() == null || p.getValue().getValue().getStatus() == Status.FOLDER ? "" : p.getValue().getValue().getStatus().toString()));
+            statusCol.setCellFactory(new StatusCellFactory());
             descriptionColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDescription()));
             descriptionColumn.setCellFactory(new DescriptionAndDetailsCellFactory("File processing description"));
             detailsColumn.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getDetails()));
@@ -299,6 +302,97 @@ public class BidFx extends Application {
             columns.add(descriptionColumn);
             columns.add(detailsColumn);
             return columns;
+        }
+
+        private class StatusCellFactory implements Callback<TreeTableColumn<BytesProcessResult, String>, TreeTableCell<BytesProcessResult, String>> {
+            @Override
+            public TreeTableCell<BytesProcessResult, String> call(TreeTableColumn<BytesProcessResult, String> param) {
+                return new TreeTableCell<BytesProcessResult, String>() {
+                    @Override
+                    protected void updateItem(String item, boolean empty) {
+                        if (!empty &&
+                                /*!StringUtils.isBlank(item) &&*/
+                                getTreeTableRow().getTreeItem() != null /*&&
+                                getTreeTableRow().getTreeItem().getValue() != null*/) {
+                            TreeItem<BytesProcessResult> treeItem = getTreeTableRow().getTreeItem();
+
+
+
+                            /*
+                            * GridPane statusBarGrid = new GridPane();
+            setupGridParams(statusBarGrid, 16, new Insets(0, 0, 0, 0));
+            statusBarGrid.setAlignment(Pos.TOP_LEFT);
+            statusBarGrid.add(statusBarText, 0, 0, 1, 1);
+            statusBarGrid.add(progressBar, 1, 0, 1, 1);
+            statusBarGrid.add(progressBarProgress, 2, 0, 1, 1);
+            progressBarProgress.setMaxWidth(40);
+            progressBarProgress.setMinWidth(40);
+            progressBarProgress.setPrefWidth(40);
+            statusBarGrid.setHgrow(progressBar, Priority.NEVER);
+            statusBarGrid.setHgrow(statusBarText, Priority.ALWAYS);
+            statusBarGrid.setHgrow(progressBarProgress, Priority.NEVER);
+
+            statusBarGrid.getColumnConstraints().addAll(
+                    new ColumnConstraints(-1, -1, -1, Priority.ALWAYS, HPos.LEFT, true),
+                    new ColumnConstraints(-1, -1, -1, Priority.NEVER, HPos.RIGHT, false),
+                    new ColumnConstraints(-1, -1, -1, Priority.NEVER, HPos.RIGHT, false)
+            );*/
+                            AtomicInteger i = new AtomicInteger(0);
+                            if (treeItem.getValue().isLeaf()) {
+                                HBox hBox = new HBox();
+                                hBox.getChildren().add(new Label(item));
+                                hBox.setAlignment(Pos.CENTER_LEFT);
+                                setGraphic(hBox);
+                            } else {
+                                GridPane statusesGrid = new GridPane();
+                                //statusesGrid.setGridLinesVisible(true);
+                                setupGridParams(statusesGrid, 0, new Insets(0, 0, 0, 0));
+                                statusesGrid.getRowConstraints().addAll(new RowConstraints(-1, -1, -1, Priority.NEVER, VPos.TOP, false));
+                                Map<Status, Long> byStatusesMap = treeItem.getValue().getResultPostInfo().getByStatusesMap();
+                                long totalNonFoldersInside = treeItem.getValue().getResultPostInfo().getTotalNonFoldersInside();
+                                TreeSet<Status> sortedStatuses = new TreeSet<>(byStatusesMap.keySet());
+                                sortedStatuses.stream().filter(new Predicate<Status>() {
+                                    @Override
+                                    public boolean test(Status status) {
+                                        return status != Status.SMTH_GOES_WRONG && status.getPriority() > Status.FOLDER.getPriority();
+                                    }
+                                }).sorted((o1, o2) -> {
+                                    return Integer.compare(o2.getPriority(), o1.getPriority());
+                                }).forEachOrdered(new Consumer<Status>() {
+                                    @Override
+                                    public void accept(Status status) {
+                                        if (totalNonFoldersInside != 0L) {
+                                            float percent = (0f + byStatusesMap.get(status)) / totalNonFoldersInside * 100;
+                                            //BigDecimal percent = new BigDecimal(byStatusesMap.get(status)).divide(new BigDecimal(totalNonFoldersInside)).multiply(new BigDecimal(100));
+                                            float percentRounded = Precision.round(percent, 1);
+                                            if (percentRounded != 0) {
+                                                Label currentStatusLbl = new Label();
+                                                HBox hBox = new HBox(currentStatusLbl);
+                                                hBox.setMaxHeight(5);
+                                                hBox.setMinHeight(5);
+                                                hBox.setPrefHeight(5);
+                                                hBox.getStyleClass().add("tree-table-row-bckgnd-" + status.toString().toLowerCase());
+                                                hBox.setHgrow(currentStatusLbl, Priority.ALWAYS);
+                                                statusesGrid.add(hBox, i.get(), 0, 1, 1);
+                                                ColumnConstraints columnConstraints = new ColumnConstraints(-1, -1, -1, Priority.ALWAYS, HPos.LEFT, true);
+                                                columnConstraints.setPercentWidth(percent);
+                                                statusesGrid.getColumnConstraints().add(columnConstraints);
+                                                i.incrementAndGet();
+                                            }
+                                        }
+
+                                    }
+                                });
+                                setTooltip(new Tooltip(treeItem.getValue().getResultPostInfo().getPostInfoFormatted()));
+                                setGraphic(statusesGrid);
+                            }
+                        } else {
+                            setText(null);
+                            setGraphic(null);
+                        }
+                    }
+                };
+            }
         }
 
 
@@ -388,6 +482,8 @@ public class BidFx extends Application {
                 }
             }
         }
+
+
     }
 
     private class FormController {
@@ -454,8 +550,8 @@ public class BidFx extends Application {
                             getStyleClass().add("my-tree-table-row-text-fill");
                             if (item != null) {
                                 if (!StringUtils.isEmpty(item.getStatus().toString())) {
-                                    getStyleClass().add("tree-table-row-bckgnd-with-status");
-                                    setId("tree-table-row-bckgnd-" + item.getStatus().toString().toLowerCase());
+                                    //getStyleClass().add("tree-table-row-bckgnd-with-status");
+                                    getStyleClass().add("tree-table-row-bckgnd-" + item.getStatus().toString().toLowerCase());
                                 } else {
                                     getStyleClass().add("tree-table-row-bckgnd-empty");
                                     setId(null);
@@ -477,10 +573,10 @@ public class BidFx extends Application {
                                     mainForm.treeTableView.getSelectionModel().select(selectedItem);
                                     BytesProcessResult processResult = (BytesProcessResult) selectedItem.getValue();
                                     if (processResult != null) {
-                                        if (event.getClickCount() >= 1 && !processResult.isLeaf()) {
+                                        if (!processResult.isLeaf()) {
                                             //expand/collapse folder
                                             selectedItem.setExpanded(!selectedItem.isExpanded());
-                                        } else if (event.getClickCount() >= 2 && processResult.getPath() != null && processResult.isLeaf()) {
+                                        } else if (processResult.isLeaf() && event.getClickCount() >= 2 && processResult.getPath() != null) {
                                             openFileOrItsFolder(processResult);
                                         }
                                     }

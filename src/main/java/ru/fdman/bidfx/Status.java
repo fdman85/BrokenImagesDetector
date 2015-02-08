@@ -35,7 +35,7 @@ public enum Status {
             case CRITICAL:
                 return "Critical";
             case SMTH_GOES_WRONG:
-                return "Something goes wrong :(";
+                return "Something goes wrong";
 
         }
         return super.toString();

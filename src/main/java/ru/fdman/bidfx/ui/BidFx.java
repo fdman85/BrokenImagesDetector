@@ -151,6 +151,7 @@ public class BidFx extends Application {
             scanBtn.setMinWidth(90);
             moveRenameBtn.setMinWidth(90);
             treeTableView.getColumns().setAll(getTreeTableViewColumns());
+            treeTableView.setColumnResizePolicy(TreeTableView.CONSTRAINED_RESIZE_POLICY);
             treeTableView.setShowRoot(true);
             progressBar.progressProperty().addListener(new ChangeListener<Number>() {
                 private double maxProgressValue = 0;
@@ -285,10 +286,10 @@ public class BidFx extends Application {
             TreeTableColumn<BytesProcessResult, String> descriptionColumn = new TreeTableColumn<>("Description");
             TreeTableColumn<BytesProcessResult, String> detailsColumn = new TreeTableColumn<>("Details");
 
-            nameCol.setPrefWidth(300);
-            statusCol.setPrefWidth(100);
-            descriptionColumn.setPrefWidth(450);
-            detailsColumn.setPrefWidth(255);
+            nameCol.setMinWidth(300);
+            statusCol.setMinWidth(100);
+            descriptionColumn.setMinWidth(450);
+            detailsColumn.setMinWidth(255);
 
             nameCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<BytesProcessResult, String> p) -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getPath().toFile().getName()));
             statusCol.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null || p.getValue().getValue().getStatus() == null || p.getValue().getValue().getStatus() == Status.FOLDER ? "" : p.getValue().getValue().getStatus().toString()));

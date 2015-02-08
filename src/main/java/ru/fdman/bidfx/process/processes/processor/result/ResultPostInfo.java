@@ -49,7 +49,6 @@ public class ResultPostInfo {
 
     public void addValueToByStatusesMap(Status status, long value) {
         addToByStatusesMap(byStatusesMap, status, value);
-        //byStatusesMap.put(status, byStatusesMap.get(status)+value);
     }
 
 

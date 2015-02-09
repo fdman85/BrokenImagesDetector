@@ -6,7 +6,110 @@
 
     <groupId>ru.fdman</groupId>
     <artifactId>BrokenImagesDetector</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
+
+    <packaging>jar</packaging>
+    <name>Broken Images Detector</name>
+    <url>https://github.com/fdman85/BrokenImagesDetector</url>
+    <description>
+        After my HDD was damaged, some of my images were broken.
+        So, that utility helps to detect them and rename with new extension 'bid'.
+        It is uses multi-core algorithms in its work.
+    </description>
+    <licenses>
+        <license>
+            <name>GNU GENERAL PUBLIC LICENSE Version 3</name>
+            <url>http://www.gnu.org/copyleft/gpl.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <developers>
+        <developer>
+            <id>fdman85</id>
+            <name>Dmitry Fedorchenko</name>
+            <email>fdman85@gmail.com</email>
+            <roles>
+                <role>Original Author</role>
+            </roles>
+        </developer>
+    </developers>
+
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/fdman85/BrokenImagesDetector/issues</url>
+    </issueManagement>
+
+    <properties>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>1.8</maven.compiler.source>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.7</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                </configuration>
+            </plugin>
+            <!--<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
+            </plugin>-->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>package-jar2</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>
+                                ${env.JAVA_HOME}/bin/javapackager
+                            </executable>
+
+                            <arguments>
+                                <argument>-deploy</argument>
+                                <argument>-native</argument>
+                                <argument>installer</argument>
+                                <argument>-appclass</argument>
+                                <argument>ru.fdman.bidfx.ui.BidFx</argument>
+                                <argument>-srcfiles</argument>
+                                <argument>
+                                    ${project.build.directory}/${artifactId}-app.jar
+                                </argument>
+                                <argument>-outdir</argument>
+                                <argument>./target</argument>
+                                <argument>-outfile</argument>
+                                <argument>
+                                    ${project.artifactId}-app
+                                </argument>
+                                <!--<argument>-v</argument>-->
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+
+    </build>
+
+
     <dependencies>
 
         <dependency>

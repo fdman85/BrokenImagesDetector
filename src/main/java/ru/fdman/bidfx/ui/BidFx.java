@@ -63,6 +63,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -286,10 +287,10 @@ public class BidFx extends Application {
             TreeTableColumn<BytesProcessResult, String> descriptionColumn = new TreeTableColumn<>("Description");
             TreeTableColumn<BytesProcessResult, String> detailsColumn = new TreeTableColumn<>("Details");
 
-            nameCol.setMinWidth(300);
-            statusCol.setMinWidth(100);
-            descriptionColumn.setMinWidth(450);
-            detailsColumn.setMinWidth(255);
+            nameCol.setMinWidth(100);
+            statusCol.setMinWidth(30);
+            descriptionColumn.setMinWidth(150);
+            detailsColumn.setMinWidth(150);
 
             nameCol.setCellValueFactory((TreeTableColumn.CellDataFeatures<BytesProcessResult, String> p) -> new ReadOnlyStringWrapper(p.getValue().getValue() == null ? "-" : p.getValue().getValue().getPath().toFile().getName()));
             statusCol.setCellValueFactory(p -> new ReadOnlyStringWrapper(p.getValue().getValue() == null || p.getValue().getValue().getStatus() == null || p.getValue().getValue().getStatus() == Status.FOLDER ? "" : p.getValue().getValue().getStatus().toString()));
@@ -454,14 +455,33 @@ public class BidFx extends Application {
                             alert.getButtonTypes().setAll(buttonTypeCopy, buttonTypeOk);
 
                             final Button buttonCopy = (Button) alert.getDialogPane().lookupButton(buttonTypeCopy);
+                            buttonCopy.setMinWidth(300);
+                            buttonCopy.setMaxWidth(300);
+                            buttonCopy.setPrefWidth(300);
                             buttonCopy.addEventFilter(ActionEvent.ACTION, (e) -> {
                                 final Clipboard clipboard = Clipboard.getSystemClipboard();
                                 final ClipboardContent content = new ClipboardContent();
                                 content.putString(treeItem.getValue().getPath().toString() + "\n" + item);
                                 clipboard.setContent(content);
                                 buttonCopy.setText("Copied");
+                                Executors.newSingleThreadExecutor().submit(() -> {
+                                    try {
+                                        Thread.sleep(1000);
+                                    } catch (InterruptedException e1) {
+                                    } finally {
+                                        Platform.runLater(() -> {
+                                            buttonCopy.setText("Copy details to clipboard");
+                                        });
+                                    }
+                                });
                                 e.consume();
                             });
+                            /*buttonCopy.setOnMouseExited(new EventHandler<MouseEvent>() {
+                                @Override
+                                public void handle(MouseEvent event) {
+                                    buttonCopy.setText("Copy details to clipboard");
+                                }
+                            });                                                     */
                             switch (treeItem.getValue().getStatus()) {
                                 case CRITICAL:
                                 case ERROR:
@@ -1107,9 +1127,9 @@ public class BidFx extends Application {
 
 
 class UIConstants {
-    private static final String APP_NAME = "Broken Images Detector Fx";
-    public static final String VERSION = "0.1";
-    public static final String STATE = "Developer version";
+    private static final String APP_NAME = "Broken Images Detector";
+    public static final String VERSION = "1.0";
+    public static final String STATE = "Alpha version";
     public static final String MAIN_TITLE = APP_NAME + " " + VERSION + (StringUtils.isBlank(STATE) ? "" : " ") + STATE;
     public static final Insets INSETS_STD = new Insets(5, 5, 5, 5);
     public static final double GAP_STD = 10;

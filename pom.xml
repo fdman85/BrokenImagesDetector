@@ -20,7 +20,6 @@
         <license>
             <name>GNU GENERAL PUBLIC LICENSE Version 3</name>
             <url>http://www.gnu.org/copyleft/gpl.html</url>
-            <distribution>repo</distribution>
         </license>
     </licenses>
     <developers>
@@ -30,6 +29,14 @@
             <email>fdman85@gmail.com</email>
             <roles>
                 <role>Original Author</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>tannyushona</id>
+            <name>Tatiana Fedorchenko</name>
+            <email>fedorchenko.tatyana87@gmail.com</email>
+            <roles>
+                <role>QA Engineer</role>
             </roles>
         </developer>
     </developers>
@@ -42,9 +49,11 @@
     <properties>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.source>1.8</maven.compiler.source>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <build>
+        <defaultGoal>clean package</defaultGoal>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -55,58 +64,56 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <version>2.7</version>
-                <configuration>
-                    <encoding>UTF-8</encoding>
-                </configuration>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>unpack-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>unpack-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <excludeScope>system</excludeScope>
+                            <excludeGroupIds>junit,org.mockito,org.hamcrest</excludeGroupIds>
+                            <outputDirectory>${project.build.directory}/classes</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
-            <!--<plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-            </plugin>-->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
+                <version>1.2.1</version>
                 <executions>
                     <execution>
-                        <id>package-jar2</id>
+                        <id>package-jar</id>
                         <phase>package</phase>
                         <goals>
                             <goal>exec</goal>
                         </goals>
                         <configuration>
-                            <executable>
-                                ${env.JAVA_HOME}/bin/javapackager
-                            </executable>
-
+                            <executable>${env.JAVA_HOME}/bin/javapackager</executable>
                             <arguments>
-                                <argument>-deploy</argument>
-                                <argument>-native</argument>
-                                <argument>installer</argument>
+                                <argument>-createjar</argument>
+                                <argument>-nocss2bin</argument>
                                 <argument>-appclass</argument>
                                 <argument>ru.fdman.bidfx.ui.BidFx</argument>
-                                <argument>-srcfiles</argument>
-                                <argument>
-                                    ${project.build.directory}/${artifactId}-app.jar
-                                </argument>
+                                <argument>-srcdir</argument>
+                                <argument>${project.build.directory}/classes</argument>
                                 <argument>-outdir</argument>
-                                <argument>./target</argument>
+                                <argument>.</argument>
+                                <argument>-outdir</argument>
+                                <argument>${project.build.directory}</argument>
                                 <argument>-outfile</argument>
-                                <argument>
-                                    ${project.artifactId}-app
-                                </argument>
-                                <!--<argument>-v</argument>-->
+                                <argument>${project.artifactId}-app</argument>
+                                <argument>-v</argument>
                             </arguments>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
-
-
     </build>
 
 

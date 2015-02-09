@@ -548,7 +548,8 @@ public class BidFx extends Application {
 
         private void setupFreeMarkerEngine() throws IOException, URISyntaxException {
             freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_21);
-            freeMarkerCfg.setDirectoryForTemplateLoading(new File(this.getClass().getClassLoader().getResource("freemarker").toURI()));
+//            freeMarkerCfg.setDirectoryForTemplateLoading(new File(this.getClass().getClassLoader().getResource("freemarker").toURI()));
+            freeMarkerCfg.setClassForTemplateLoading(getClass(), "/freemarker/");
             freeMarkerCfg.setDefaultEncoding("UTF-8");
             freeMarkerCfg.setTemplateExceptionHandler(TemplateExceptionHandler.DEBUG_HANDLER);
         }

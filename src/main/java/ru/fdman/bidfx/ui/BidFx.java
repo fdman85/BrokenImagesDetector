@@ -5,6 +5,8 @@ import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateException;
 import freemarker.template.TemplateExceptionHandler;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.*;
@@ -34,6 +36,7 @@ import javafx.scene.layout.*;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Callback;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -58,6 +61,7 @@ import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.URISyntaxException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -307,6 +311,22 @@ public class BidFx extends Application {
         }
 
         private class StatusCellFactory implements Callback<TreeTableColumn<BytesProcessResult, String>, TreeTableCell<BytesProcessResult, String>> {
+            public void hackTooltipStartTiming(Tooltip tooltip) {
+                try {
+                    Field fieldBehavior = tooltip.getClass().getDeclaredField("BEHAVIOR");
+                    fieldBehavior.setAccessible(true);
+                    Object objBehavior = fieldBehavior.get(tooltip);
+
+                    Field fieldTimer = objBehavior.getClass().getDeclaredField("activationTimer");
+                    fieldTimer.setAccessible(true);
+                    Timeline objTimer = (Timeline) fieldTimer.get(objBehavior);
+
+                    objTimer.getKeyFrames().clear();
+                    objTimer.getKeyFrames().add(new KeyFrame(new Duration(0)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
             @Override
             public TreeTableCell<BytesProcessResult, String> call(TreeTableColumn<BytesProcessResult, String> param) {
                 return new TreeTableCell<BytesProcessResult, String>() {
@@ -385,7 +405,9 @@ public class BidFx extends Application {
 
                                     }
                                 });
-                                setTooltip(new Tooltip(treeItem.getValue().getResultPostInfo().getPostInfoFormatted()));
+                                Tooltip tooltip = new Tooltip(treeItem.getValue().getResultPostInfo().getPostInfoFormatted());
+                                hackTooltipStartTiming(tooltip);
+                                setTooltip(tooltip);
                                 setGraphic(statusesGrid);
                             }
                         } else {
